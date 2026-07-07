@@ -9,6 +9,7 @@ namespace TransportApi.Controllers
     public class PaymentController : ControllerBase
     {
         private readonly AppDbContext _context;
+
         public PaymentController(AppDbContext context)
         {
             _context = context;
@@ -18,10 +19,8 @@ namespace TransportApi.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Payment>>> GetPayments()
         {
-            var payments = await _context.Payments
-                .Include(p => p.PaymentType) 
-                .ToListAsync();
-
+            // Видалено .Include(p => p.PaymentType)
+            var payments = await _context.Payments.ToListAsync();
             return Ok(payments);
         }
 
@@ -44,7 +43,6 @@ namespace TransportApi.Controllers
         public async Task<ActionResult<Payment>> PostPayment(Payment payment)
         {
             _context.Payments.Add(payment);
-            
             await _context.SaveChangesAsync();
 
             return CreatedAtAction(nameof(GetPayment), new { id = payment.Id }, payment);

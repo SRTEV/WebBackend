@@ -8,9 +8,10 @@ namespace TransportApi.Controllers
     [ApiController]
     public class UsersResultController : ControllerBase
     {
-        private readonly TransportApiContext _context;
+        // Замінено TransportApiContext на AppDbContext
+        private readonly AppDbContext _context;
 
-        public UsersResultController(TransportApiContext context)
+        public UsersResultController(AppDbContext context)
         {
             _context = context;
         }

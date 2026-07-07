@@ -6,10 +6,10 @@ namespace TransportApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-
     public class UserController : ControllerBase
     {
         private readonly AppDbContext _context;
+
         public UserController(AppDbContext context)
         {
             _context = context;
@@ -20,7 +20,7 @@ namespace TransportApi.Controllers
         public async Task<ActionResult<IEnumerable<User>>> GetUsers()
         {
             var users = await _context.Users
-                .Include(u => u.UserType) 
+                .Include(u => u.Role)
                 .ToListAsync();
 
             return Ok(users);
@@ -40,15 +40,34 @@ namespace TransportApi.Controllers
             return Ok(user);
         }
 
-        // POST: api/User
-        [HttpPost]
-        public async Task<ActionResult<User>> PostUser(User user)
+        // POST: api/User/login
+        [HttpPost("login")]
+        public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
-            _context.Users.Add(user);
-            
-            await _context.SaveChangesAsync();
+            var user = await _context.Users
+                .FirstOrDefaultAsync(u => u.Email == request.Email);
 
-            return CreatedAtAction(nameof(GetUser), new { id = user.Id }, user);
+             if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+            {
+                return Unauthorized(new
+                {
+                    message = "Invalid email or password"
+                });
+            }
+
+            return Ok(new
+            {
+                message = "Login successful",
+                userId = user.Id,
+                name = user.Name
+            });
+        }
+
+        public class LoginRequest
+        {
+            public string Email { get; set; } = null!;
+
+            public string Password { get; set; } = null!;
         }
     }
 }

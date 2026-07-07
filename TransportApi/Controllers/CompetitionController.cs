@@ -6,10 +6,10 @@ namespace TransportApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-
     public class CompetitionController : ControllerBase
     {
         private readonly AppDbContext _context;
+
         public CompetitionController(AppDbContext context)
         {
             _context = context;
@@ -19,11 +19,8 @@ namespace TransportApi.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Competition>>> GetCompetitions()
         {
-            var competitions = await _context.Competitions
-                .Include(c => c.CompetitionType) 
-                .Include(c => c.CompetitionStatus)
-                .ToListAsync();
-
+            // Видалено .Include(c => c.CompetitionType)
+            var competitions = await _context.Competitions.ToListAsync();
             return Ok(competitions);
         }
 
@@ -46,7 +43,6 @@ namespace TransportApi.Controllers
         public async Task<ActionResult<Competition>> PostCompetition(Competition competition)
         {
             _context.Competitions.Add(competition);
-            
             await _context.SaveChangesAsync();
 
             return CreatedAtAction(nameof(GetCompetition), new { id = competition.Id }, competition);

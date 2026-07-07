@@ -9,6 +9,7 @@ namespace TransportApi.Controllers
     public class RouteHistoryController : ControllerBase
     {
         private readonly AppDbContext _context;
+
         public RouteHistoryController(AppDbContext context)
         {
             _context = context;
@@ -19,7 +20,6 @@ namespace TransportApi.Controllers
         public async Task<ActionResult<IEnumerable<RouteHistory>>> GetRouteHistories()
         {
             var routeHistories = await _context.RouteHistories
-                .Include(rh => rh.User) 
                 .Include(rh => rh.Vehicle) 
                 .ToListAsync();
 
@@ -45,7 +45,6 @@ namespace TransportApi.Controllers
         public async Task<ActionResult<RouteHistory>> PostRouteHistory(RouteHistory routeHistory)
         {
             _context.RouteHistories.Add(routeHistory);
-            
             await _context.SaveChangesAsync();
 
             return CreatedAtAction(nameof(GetRouteHistory), new { id = routeHistory.Id }, routeHistory);

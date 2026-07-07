@@ -9,6 +9,7 @@ namespace TransportApi.Controllers
     public class VehicleStatusController : ControllerBase
     {
         private readonly AppDbContext _context;
+
         public VehicleStatusController(AppDbContext context)
         {
             _context = context;
@@ -16,16 +17,17 @@ namespace TransportApi.Controllers
 
         // GET: api/VehicleStatus
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<VehicleStatus>>> GetVehicleStatuses()
+        public async Task<ActionResult<IEnumerable<VechicleStatus>>> GetVehicleStatuses()
         {
-            return await _context.VehicleStatuses.ToListAsync();
+            // Використовуємо VechicleStatuses з одруківкою, як у контексті
+            return await _context.VechicleStatuses.ToListAsync();
         }
 
         // GET: api/VehicleStatus/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<VehicleStatus>> GetVehicleStatus(int id)
+        public async Task<ActionResult<VechicleStatus>> GetVehicleStatus(int id)
         {
-            var vehicleStatus = await _context.VehicleStatuses.FindAsync(id);
+            var vehicleStatus = await _context.VechicleStatuses.FindAsync(id);
 
             if (vehicleStatus == null)
             {
@@ -37,9 +39,9 @@ namespace TransportApi.Controllers
 
         // POST: api/VehicleStatus
         [HttpPost]
-        public async Task<ActionResult<VehicleStatus>> PostVehicleStatus(VehicleStatus vehicleStatus)
+        public async Task<ActionResult<VechicleStatus>> PostVehicleStatus(VechicleStatus vehicleStatus)
         {
-            _context.VehicleStatuses.Add(vehicleStatus);
+            _context.VechicleStatuses.Add(vehicleStatus);
             await _context.SaveChangesAsync();
 
             return CreatedAtAction("GetVehicleStatus", new { id = vehicleStatus.Id }, vehicleStatus);

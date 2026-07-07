@@ -9,6 +9,7 @@ namespace TransportApi.Controllers
     public class NotificationController : ControllerBase
     {
         private readonly AppDbContext _context;
+
         public NotificationController(AppDbContext context)
         {
             _context = context;
@@ -18,10 +19,8 @@ namespace TransportApi.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Notification>>> GetNotifications()
         {
-            var notifications = await _context.Notifications
-                .Include(n => n.NotificationType) 
-                .ToListAsync();
-
+            // Видалено .Include(n => n.NotificationType)
+            var notifications = await _context.Notifications.ToListAsync();
             return Ok(notifications);
         }
 
@@ -44,7 +43,6 @@ namespace TransportApi.Controllers
         public async Task<ActionResult<Notification>> PostNotification(Notification notification)
         {
             _context.Notifications.Add(notification);
-            
             await _context.SaveChangesAsync();
 
             return CreatedAtAction(nameof(GetNotification), new { id = notification.Id }, notification);

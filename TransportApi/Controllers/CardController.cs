@@ -9,6 +9,7 @@ namespace TransportApi.Controllers
     public class CardController : ControllerBase
     {
         private readonly AppDbContext _context;
+
         public CardController(AppDbContext context)
         {
             _context = context;
@@ -18,11 +19,8 @@ namespace TransportApi.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Card>>> GetCards()
         {
-            var cards = await _context.Cards
-                .Include(c => c.CardType) 
-                .Include(c => c.CardStatus)
-                .ToListAsync();
-
+            // Видалено .Include(c => c.CardType)
+            var cards = await _context.Cards.ToListAsync();
             return Ok(cards);
         }
 
@@ -45,7 +43,6 @@ namespace TransportApi.Controllers
         public async Task<ActionResult<Card>> PostCard(Card card)
         {
             _context.Cards.Add(card);
-            
             await _context.SaveChangesAsync();
 
             return CreatedAtAction(nameof(GetCard), new { id = card.Id }, card);

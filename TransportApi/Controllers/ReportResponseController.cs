@@ -8,9 +8,10 @@ namespace TransportApi.Controllers
     [ApiController]
     public class ReportResponseController : ControllerBase
     {
-        private readonly TransportApiContext _context;
+        // Changed from TransportApiContext to AppDbContext
+        private readonly AppDbContext _context;
 
-        public ReportResponseController(TransportApiContext context)
+        public ReportResponseController(AppDbContext context)
         {
             _context = context;
         }

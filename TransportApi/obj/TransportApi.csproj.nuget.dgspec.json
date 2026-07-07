@@ -1,20 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\artur\\Documents\\Git\\WebBackend\\TransportApi\\TransportApi.csproj": {}
+    "/Users/arturtrokhymenko/Documents/GitHub/WebBackend/TransportApi/TransportApi.csproj": {}
   },
   "projects": {
-    "C:\\Users\\artur\\Documents\\Git\\WebBackend\\TransportApi\\TransportApi.csproj": {
+    "/Users/arturtrokhymenko/Documents/GitHub/WebBackend/TransportApi/TransportApi.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\artur\\Documents\\Git\\WebBackend\\TransportApi\\TransportApi.csproj",
+        "projectUniqueName": "/Users/arturtrokhymenko/Documents/GitHub/WebBackend/TransportApi/TransportApi.csproj",
         "projectName": "TransportApi",
-        "projectPath": "C:\\Users\\artur\\Documents\\Git\\WebBackend\\TransportApi\\TransportApi.csproj",
-        "packagesPath": "C:\\Users\\artur\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\artur\\Documents\\Git\\WebBackend\\TransportApi\\obj\\",
+        "projectPath": "/Users/arturtrokhymenko/Documents/GitHub/WebBackend/TransportApi/TransportApi.csproj",
+        "packagesPath": "/Users/arturtrokhymenko/.nuget/packages/",
+        "outputPath": "/Users/arturtrokhymenko/Documents/GitHub/WebBackend/TransportApi/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\artur\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "/Users/arturtrokhymenko/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net10.0"
@@ -46,6 +46,10 @@
           "framework": "net10.0",
           "targetAlias": "net10.0",
           "dependencies": {
+            "BCrypt.Net-Next": {
+              "target": "Package",
+              "version": "[4.2.0, )"
+            },
             "Microsoft.AspNetCore.OpenApi": {
               "target": "Package",
               "version": "[10.0.9, )"
@@ -84,7 +88,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json",
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/10.0.301/PortableRuntimeIdentifierGraph.json",
           "packagesToPrune": {
             "Microsoft.AspNetCore": "(,10.0.32767]",
             "Microsoft.AspNetCore.Antiforgery": "(,10.0.32767]",
