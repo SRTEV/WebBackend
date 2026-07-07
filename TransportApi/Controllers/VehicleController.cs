@@ -6,31 +6,31 @@ namespace TransportApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class VehiclesController : ControllerBase
+    public class VehicleController : ControllerBase
     {
         private readonly AppDbContext _context;
-        public VehiclesController(AppDbContext context)
+        public VehicleController(AppDbContext context)
         {
             _context = context;
         }
 
-        // GET: api/Vehicles
+        // GET: api/Vehicle
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Vehicle>>> GetVehicles()
+        public async Task<ActionResult<IEnumerable<Vehicle>>> GetVehicle()
         {
-            var vehicles = await _context.Vehicles
+            var vehicle = await _context.Vehicle
                 .Include(v => v.VehicleType) 
                 .Include(v => v.VechicleStatus)
                 .ToListAsync();
 
-            return Ok(vehicles);
+            return Ok(vehicle);
         }
 
-        // GET: api/Vehicles/5
+        // GET: api/Vehicle/5
         [HttpGet("{id}")]
         public async Task<ActionResult<Vehicle>> GetVehicle(int id)
         {
-            var vehicle = await _context.Vehicles.FindAsync(id);
+            var vehicle = await _context.Vehicle.FindAsync(id);
 
             if (vehicle == null)
             {
@@ -40,11 +40,11 @@ namespace TransportApi.Controllers
             return Ok(vehicle);
         }
 
-        // POST: api/Vehicles
+        // POST: api/Vehicle
         [HttpPost]
         public async Task<ActionResult<Vehicle>> PostVehicle(Vehicle vehicle)
         {
-            _context.Vehicles.Add(vehicle);
+            _context.Vehicle.Add(vehicle);
             
             await _context.SaveChangesAsync();
 
