@@ -5,6 +5,8 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using TransportApi.Models;
+using TransportApi.Services;
+
 
 namespace TransportApi.Controllers
 {
@@ -14,11 +16,13 @@ namespace TransportApi.Controllers
     {
         private readonly AppDbContext _context;
         private readonly IConfiguration _configuration;
+        private readonly IEmailService _emailService;
         
-        public UserController(AppDbContext context, IConfiguration configuration)
+        public UserController(AppDbContext context, IConfiguration configuration, IEmailService emailService)
         {
             _context = context;
             _configuration = configuration;
+            _emailService = emailService;
         }
 
         // GET: api/User
@@ -127,6 +131,38 @@ namespace TransportApi.Controllers
                 name = user.Name
             });
         }
+[HttpPost("ResetPassword")]
+public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+{
+  
+    var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+
+    if (user == null)
+    {
+        return Ok(new { message = "If such a user exists, the password reset link has been sent to your email." });
+    }
+
+    user.ResetLink = Guid.NewGuid().ToString();
+       
+    await _context.SaveChangesAsync();
+
+    try 
+    {
+        await _emailService.SendResetPasswordEmail(user.Email, user.ResetLink);
+        
+        return Ok(new { message = "The password reset link has been sent to your email." });
+    }
+    catch (Exception ex)
+    {
+       
+       Console.WriteLine($"EMAIL ERROR: {ex.Message}");
+        if (ex.InnerException != null) 
+            Console.WriteLine($"INNER EXCEPTION: {ex.InnerException.Message}");
+
+        return StatusCode(500, new { message = "An error occurred while sending the email. Please try again later.", details = ex.Message });
+    }
+}
+        
         public class LoginRequest
         {
             public string Email { get; set; } = null!;

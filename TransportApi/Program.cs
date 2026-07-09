@@ -1,14 +1,22 @@
 using Microsoft.EntityFrameworkCore;
 using TransportApi.Models;
+using TransportApi.Services;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
+DotNetEnv.Env.Load();
+builder.Configuration.AddEnvironmentVariables();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-
+var serverVersion = ServerVersion.Parse("8.0.46-mysql");
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+    options.UseMySql(connectionString, serverVersion));
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+    });
 
 builder.Services.AddCors(options =>
 {
@@ -20,8 +28,10 @@ builder.Services.AddCors(options =>
     });
 });
 
-var app = builder.Build();
+builder.Services.AddScoped<IEmailService, EmailService>();
 
+var app = builder.Build();
+app.UseStaticFiles();
 app.UseCors("AllowReactApp");
 app.MapControllers();
 app.Run();

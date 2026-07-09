@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Redirecting...</title>
+</head>
+<body>
+    <p>Redirecting to the app...</p>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const token = params.get('token');
+        
+        if (token) {
+            window.location.href = "mainapp://reset?token=" + token;
+
+            setTimeout(() => {
+                document.body.innerHTML = "If the app doesn't open, click <a href='mainapp://reset?token=" + token + "'>here</a>";
+            }, 1000);
+        } else {
+            document.body.innerHTML = "Error: Token not found.";
+        }
+    </script>
+</body>
+</html>
