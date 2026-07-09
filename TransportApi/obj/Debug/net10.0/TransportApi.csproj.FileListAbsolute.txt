@@ -244,3 +244,12 @@
 /Users/arturtrokhymenko/Documents/GitHub/WebBackend/TransportApi/obj/Debug/net10.0/TransportApi.genruntimeconfig.cache
 /Users/arturtrokhymenko/Documents/GitHub/WebBackend/TransportApi/obj/Debug/net10.0/ref/TransportApi.dll
 /Users/arturtrokhymenko/Documents/GitHub/WebBackend/TransportApi/bin/Debug/net10.0/BCrypt-Net-Next.dll
+/Users/arturtrokhymenko/Documents/GitHub/WebBackend/TransportApi/bin/Debug/net10.0/Microsoft.AspNetCore.Authentication.JwtBearer.dll
+/Users/arturtrokhymenko/Documents/GitHub/WebBackend/TransportApi/bin/Debug/net10.0/Microsoft.Bcl.Cryptography.dll
+/Users/arturtrokhymenko/Documents/GitHub/WebBackend/TransportApi/bin/Debug/net10.0/Microsoft.IdentityModel.Abstractions.dll
+/Users/arturtrokhymenko/Documents/GitHub/WebBackend/TransportApi/bin/Debug/net10.0/Microsoft.IdentityModel.JsonWebTokens.dll
+/Users/arturtrokhymenko/Documents/GitHub/WebBackend/TransportApi/bin/Debug/net10.0/Microsoft.IdentityModel.Logging.dll
+/Users/arturtrokhymenko/Documents/GitHub/WebBackend/TransportApi/bin/Debug/net10.0/Microsoft.IdentityModel.Protocols.dll
+/Users/arturtrokhymenko/Documents/GitHub/WebBackend/TransportApi/bin/Debug/net10.0/Microsoft.IdentityModel.Protocols.OpenIdConnect.dll
+/Users/arturtrokhymenko/Documents/GitHub/WebBackend/TransportApi/bin/Debug/net10.0/Microsoft.IdentityModel.Tokens.dll
+/Users/arturtrokhymenko/Documents/GitHub/WebBackend/TransportApi/bin/Debug/net10.0/System.IdentityModel.Tokens.Jwt.dll
