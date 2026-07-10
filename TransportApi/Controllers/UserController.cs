@@ -49,23 +49,86 @@ namespace TransportApi.Controllers
 
             return Ok(user);
         }
+//логін в апку шоб пароль не літав не хешований так безпечніше і простіше
+[HttpPost("login/app")]
+public async Task<IActionResult> LoginApp([FromBody] LoginRequest request)
+{
+    var user = await _context.Users
+        .Include(u => u.Role)
+        .FirstOrDefaultAsync(u => u.Email == request.Email);
+
+    if (user == null || request.Password != user.PasswordHash)
+    {
+        return Unauthorized(new { message = "Invalid email or password" });
+    }
+   return Ok(new
+            {
+                message = "Login successful",
+                userId = user.Id,
+                name = user.Name
+            });
+}
+
+[HttpPost("register/app")]
+public async Task<IActionResult> RegisterApp([FromBody] RegisterRequest request)
+{
+    var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+    if (existingUser != null)
+    {
+        return BadRequest(new { message = "User with this email already exists" });
+    }
+    var user = new User
+    {
+        Name = request.Name,
+        PasswordHash = request.Password, 
+        Email = request.Email,
+        CreatedAt = DateTime.UtcNow,
+        UpdatedAt = DateTime.UtcNow,
+        ResetLink = null,
+        Deleted = false,
+        OustandingBalances = 0,
+        IsBlocked = false,
+        BlockedReason = null,
+        RoleId = 1,
+        CardId = null
+    };
+
+    _context.Users.Add(user);
+    await _context.SaveChangesAsync();
+
+    return Ok(new
+    {
+        message = "User registered successfully",
+        userId = user.Id,
+        name = user.Name
+    });
+}
 
         // POST: api/User/login
+        //логін на адмінку
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
-            var user = await _context.Users
-                .Include(u => u.Role)
-                .FirstOrDefaultAsync(u => u.Email == request.Email);
+            var user = await _context.Users.Include(u => u.Role).FirstOrDefaultAsync(u => u.Email == request.Email);
+            var salt = _configuration["SALT"];
 
-             if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+            if (string.IsNullOrWhiteSpace(salt))
+            {
+                return StatusCode(500, new { message = "SALT is not configured" });
+            }
+
+            var hashedPassword = BCrypt.Net.BCrypt.HashPassword(request.Password, salt);
+
+             if (user == null || hashedPassword != user.PasswordHash)
             {
                 return Unauthorized(new { message = "Invalid email or password" });
             }
 
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(_configuration["Jwt:Key"] ?? "super_secret_key_that_is_long_enough_12345"); 
             
+            var tokenHandler = new JwtSecurityTokenHandler();
+            //залупа поміняй закинь все в .env 
+            var key = Encoding.ASCII.GetBytes(_configuration["Jwt:Key"] ?? "super_secret_key_that_is_long_enough_12345"); 
+        
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(new[]
@@ -90,47 +153,7 @@ namespace TransportApi.Controllers
             });
         }
 
-        // POST: api/User/Register
-        [HttpPost("Register")]
-        public async Task<IActionResult> Register([FromBody] RegisterRequest request)
-        {
-            var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
-            if (existingUser != null)
-            {
-                return BadRequest(new
-                {
-                    message = "User with this email already exists"
-                });
-            }
 
-            var hashedPassword = BCrypt.Net.BCrypt.HashPassword(request.Password);
-            var user = new User
-            {
-               
-                 Name = request.Name,
-                PasswordHash = hashedPassword,
-                Email = request.Email,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow,
-                ResetLink = null,
-                Deleted = false,
-                OustandingBalances = 0,
-                IsBlocked = false,
-                BlockedReason = null,
-                RoleId = 1,
-                CardId = null
-            };
-
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
-
-            return Ok(new
-            {
-                message = "User registered successfully",
-                userId = user.Id,
-                name = user.Name
-            });
-        }
 [HttpPost("ResetPassword")]
 public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
 {
@@ -162,6 +185,26 @@ public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest r
         return StatusCode(500, new { message = "An error occurred while sending the email. Please try again later.", details = ex.Message });
     }
 }
+
+[HttpPost("ChangePassword")]
+public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+{
+
+     var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+
+    if (user == null)
+    {
+        return NotFound(new { message = "User not found" });
+    }
+    user.PasswordHash = request.NewPassword; 
+    user.UpdatedAt = DateTime.UtcNow; 
+
+    await _context.SaveChangesAsync();
+
+    return Ok(new { message = "Password was changed" });
+}
+
+
         
         public class LoginRequest
         {
@@ -177,6 +220,26 @@ public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest r
 
             public string Name { get; set; } = null!;
         }
+
+[HttpGet("GetEmailByToken/{token}")]
+public async Task<IActionResult> GetEmailByToken(string token)
+{
+    var user = await _context.Users.FirstOrDefaultAsync(u => u.ResetLink == token);
+
+    if (user == null)
+    {
+        return NotFound(new { message = "Invalid token" });
+    }
+
+    return Ok(new { email = user.Email });
+}
+
+
+  public class ChangePasswordRequest
+{
+    public string NewPassword { get; set; } = null!;
+    public string Email { get; set; } 
+    }
 
         
     }

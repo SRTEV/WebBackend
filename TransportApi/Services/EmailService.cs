@@ -24,7 +24,7 @@ namespace TransportApi.Services
             {
                 HtmlBody = $"<h1>Password Reset Request</h1>" +
                            $"<p>Click the link below to change your password:</p>" +
-                          $"<a href='http://172.30.204.198:5194/GoToApp.html?token={resetLink}' style='padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px;'>Reset Password</a>"
+                          $"<a href='http://10.0.2.2:5194/GoToApp.html?token={resetLink}' style='padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px;'>Reset Password</a>"
             };
             message.Body = builder.ToMessageBody();
 
