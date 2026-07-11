@@ -65,7 +65,7 @@ public async Task<IActionResult> LoginApp([FromBody] LoginRequest request)
             {
                 message = "Login successful",
                 userId = user.Id,
-                name = user.Name
+                email = user.Email
             });
 }
 
@@ -100,7 +100,7 @@ public async Task<IActionResult> RegisterApp([FromBody] RegisterRequest request)
     {
         message = "User registered successfully",
         userId = user.Id,
-        name = user.Name
+        email = user.Email
     });
 }
 
@@ -220,20 +220,6 @@ public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest
 
             public string Name { get; set; } = null!;
         }
-
-[HttpGet("GetEmailByToken/{token}")]
-public async Task<IActionResult> GetEmailByToken(string token)
-{
-    var user = await _context.Users.FirstOrDefaultAsync(u => u.ResetLink == token);
-
-    if (user == null)
-    {
-        return NotFound(new { message = "Invalid token" });
-    }
-
-    return Ok(new { email = user.Email });
-}
-
 
   public class ChangePasswordRequest
 {
