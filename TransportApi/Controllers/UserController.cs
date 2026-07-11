@@ -37,18 +37,37 @@ namespace TransportApi.Controllers
         }
 
         // GET: api/User/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<User>> GetUser(int id)
-        {
-            var user = await _context.Users.FindAsync(id);
-
-            if (user == null)
+            [HttpGet("{id}")]
+            public async Task<ActionResult<User>> GetUser(int id)
             {
-                return NotFound();
+                var user = await _context.Users.FindAsync(id);
+    
+                if (user == null)
+                {
+                    return NotFound();
+                }
+
+                return Ok(user);
             }
 
-            return Ok(user);
-        }
+
+            [HttpPost("Delete/{id}")]
+            public async Task<IActionResult> DeleteUser(int id)
+            {
+                var user = await _context.Users.FindAsync(id);
+                if (user == null)
+                {
+                    return NotFound(new { message = "User not found" });
+                }
+
+                user.Deleted = true;
+                user.UpdatedAt = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new { message = "User deleted successfully" });
+            }
+
 //логін в апку шоб пароль не літав не хешований так безпечніше і простіше
 [HttpPost("login/app")]
 public async Task<IActionResult> LoginApp([FromBody] LoginRequest request)
@@ -61,6 +80,11 @@ public async Task<IActionResult> LoginApp([FromBody] LoginRequest request)
     {
         return Unauthorized(new { message = "Invalid email or password" });
     }
+    if(user.Deleted == true)
+    {
+        return Unauthorized(new { message = "User is deleted" });
+    }
+
    return Ok(new
             {
                 message = "Login successful",
