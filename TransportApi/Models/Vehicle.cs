@@ -29,7 +29,7 @@ public partial class Vehicle
 
     public int VehicleTypeId { get; set; }
 
-    public int VechicleStatusId { get; set; }
+    public int VehicleStatusId { get; set; }
 
     public virtual Rental? Rental { get; set; }
 
@@ -37,7 +37,7 @@ public partial class Vehicle
 
     public virtual ICollection<RouteHistory> RouteHistories { get; set; } = new List<RouteHistory>();
 
-    public virtual VechicleStatus VechicleStatus { get; set; } = null!;
+    public virtual VehicleStatus VehicleStatus { get; set; } = null!;
 
     public virtual VehicleType VehicleType { get; set; } = null!;
 }

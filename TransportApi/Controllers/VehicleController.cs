@@ -17,20 +17,19 @@ namespace TransportApi.Controllers
 
         // GET: api/Vehicle
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Vehicle>>> GetVehicle() // Змінено з Vehicles на Vehicle
+        public async Task<ActionResult<IEnumerable<Vehicle>>> GetVehicle()
         {
-            // _context.Vehicles залишається у множині, бо це таблиця
             var vehicle = await _context.Vehicles
-                .Include(v => v.VehicleType) 
-                .Include(v => v.VechicleStatus) // Залишаємо з одруківкою 'c', як у контексті
-                .ToListAsync();
+            .Include(v => v.VehicleType) 
+            .Include(v => v.VehicleStatus)
+            .ToListAsync();
 
             return Ok(vehicle);
         }
 
         // GET: api/Vehicle/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Vehicle>> GetVehicle(int id) // Змінено з Vehicles на Vehicle
+        public async Task<ActionResult<Vehicle>> GetVehicle(int id)
         {
             var vehicle = await _context.Vehicles.FindAsync(id);
 
@@ -44,7 +43,7 @@ namespace TransportApi.Controllers
 
         // POST: api/Vehicle
         [HttpPost]
-        public async Task<ActionResult<Vehicle>> PostVehicle(Vehicle vehicle) // Змінено з Vehicles на Vehicle
+        public async Task<ActionResult<Vehicle>> PostVehicle(Vehicle vehicle)
         {
             _context.Vehicles.Add(vehicle);
             await _context.SaveChangesAsync();

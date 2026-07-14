@@ -43,7 +43,7 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<UsersResult> UsersResults { get; set; }
 
-    public virtual DbSet<VechicleStatus> VechicleStatuses { get; set; }
+    public virtual DbSet<VehicleStatus> VehicleStatuses { get; set; }
 
     public virtual DbSet<Vehicle> Vehicles { get; set; }
 
@@ -421,11 +421,11 @@ public partial class AppDbContext : DbContext
                 .HasConstraintName("Users_result_ibfk_1");
         });
 
-        modelBuilder.Entity<VechicleStatus>(entity =>
+        modelBuilder.Entity<VehicleStatus>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("PRIMARY");
 
-            entity.ToTable("Vechicle_Status");
+            entity.ToTable("Vehicle_Status");
 
             entity.Property(e => e.Id).HasColumnName("ID");
             entity.Property(e => e.Name).HasMaxLength(255);
@@ -439,7 +439,7 @@ public partial class AppDbContext : DbContext
 
             entity.HasIndex(e => e.QrCode, "QR_code").IsUnique();
 
-            entity.HasIndex(e => e.VechicleStatusId, "Vechicle_StatusID");
+            entity.HasIndex(e => e.VehicleStatusId, "Vehicle_StatusID");
 
             entity.HasIndex(e => e.VehicleTypeId, "Vehicle_TypeID");
 
@@ -461,11 +461,11 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.ScanTime)
                 .HasColumnType("timestamp")
                 .HasColumnName("Scan_time");
-            entity.Property(e => e.VechicleStatusId).HasColumnName("Vechicle_StatusID");
+            entity.Property(e => e.VehicleStatusId).HasColumnName("Vehicle_StatusID");
             entity.Property(e => e.VehicleTypeId).HasColumnName("Vehicle_TypeID");
 
-            entity.HasOne(d => d.VechicleStatus).WithMany(p => p.Vehicles)
-                .HasForeignKey(d => d.VechicleStatusId)
+            entity.HasOne(d => d.VehicleStatus).WithMany(p => p.Vehicles)
+                .HasForeignKey(d => d.VehicleStatusId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("Vehicle_ibfk_2");
 

@@ -17,17 +17,16 @@ namespace TransportApi.Controllers
 
         // GET: api/VehicleStatus
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<VechicleStatus>>> GetVehicleStatuses()
+        public async Task<ActionResult<IEnumerable<VehicleStatus>>> GetVehicleStatuses()
         {
-            // Використовуємо VechicleStatuses з одруківкою, як у контексті
-            return await _context.VechicleStatuses.ToListAsync();
+            return await _context.VehicleStatuses.ToListAsync();
         }
 
         // GET: api/VehicleStatus/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<VechicleStatus>> GetVehicleStatus(int id)
+        public async Task<ActionResult<VehicleStatus>> GetVehicleStatus(int id)
         {
-            var vehicleStatus = await _context.VechicleStatuses.FindAsync(id);
+            var vehicleStatus = await _context.VehicleStatuses.FindAsync(id);
 
             if (vehicleStatus == null)
             {
@@ -39,9 +38,9 @@ namespace TransportApi.Controllers
 
         // POST: api/VehicleStatus
         [HttpPost]
-        public async Task<ActionResult<VechicleStatus>> PostVehicleStatus(VechicleStatus vehicleStatus)
+        public async Task<ActionResult<VehicleStatus>> PostVehicleStatus(VehicleStatus vehicleStatus)
         {
-            _context.VechicleStatuses.Add(vehicleStatus);
+            _context.VehicleStatuses.Add(vehicleStatus);
             await _context.SaveChangesAsync();
 
             return CreatedAtAction("GetVehicleStatus", new { id = vehicleStatus.Id }, vehicleStatus);

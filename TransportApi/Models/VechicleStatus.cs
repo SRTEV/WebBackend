@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace TransportApi.Models;
 
-public partial class VechicleStatus
+public partial class VehicleStatus
 {
     public int Id { get; set; }
 
