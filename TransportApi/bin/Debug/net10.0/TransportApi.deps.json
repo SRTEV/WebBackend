@@ -13,7 +13,7 @@
           "MailKit": "4.17.0",
           "Microsoft.AspNetCore.Authentication.JwtBearer": "10.0.9",
           "Microsoft.AspNetCore.OpenApi": "10.0.9",
-          "Microsoft.EntityFrameworkCore": "10.0.10",
+          "Microsoft.EntityFrameworkCore": "9.0.2",
           "Microsoft.EntityFrameworkCore.Design": "9.0.0",
           "Microsoft.EntityFrameworkCore.Relational": "9.0.2",
           "MimeKit": "4.17.0",
@@ -384,22 +384,22 @@
           }
         }
       },
-      "Microsoft.EntityFrameworkCore/10.0.10": {
+      "Microsoft.EntityFrameworkCore/9.0.2": {
         "dependencies": {
-          "Microsoft.EntityFrameworkCore.Abstractions": "10.0.10"
+          "Microsoft.EntityFrameworkCore.Abstractions": "9.0.2"
         },
         "runtime": {
-          "lib/net10.0/Microsoft.EntityFrameworkCore.dll": {
-            "assemblyVersion": "10.0.10.0",
-            "fileVersion": "10.0.1026.32716"
+          "lib/net8.0/Microsoft.EntityFrameworkCore.dll": {
+            "assemblyVersion": "9.0.2.0",
+            "fileVersion": "9.0.225.6701"
           }
         }
       },
-      "Microsoft.EntityFrameworkCore.Abstractions/10.0.10": {
+      "Microsoft.EntityFrameworkCore.Abstractions/9.0.2": {
         "runtime": {
-          "lib/net10.0/Microsoft.EntityFrameworkCore.Abstractions.dll": {
-            "assemblyVersion": "10.0.10.0",
-            "fileVersion": "10.0.1026.32716"
+          "lib/net8.0/Microsoft.EntityFrameworkCore.Abstractions.dll": {
+            "assemblyVersion": "9.0.2.0",
+            "fileVersion": "9.0.225.6701"
           }
         }
       },
@@ -423,7 +423,7 @@
       },
       "Microsoft.EntityFrameworkCore.Relational/9.0.2": {
         "dependencies": {
-          "Microsoft.EntityFrameworkCore": "10.0.10"
+          "Microsoft.EntityFrameworkCore": "9.0.2"
         },
         "runtime": {
           "lib/net8.0/Microsoft.EntityFrameworkCore.Relational.dll": {
@@ -756,19 +756,19 @@
       "path": "microsoft.codeanalysis.workspaces.msbuild/4.8.0",
       "hashPath": "microsoft.codeanalysis.workspaces.msbuild.4.8.0.nupkg.sha512"
     },
-    "Microsoft.EntityFrameworkCore/10.0.10": {
+    "Microsoft.EntityFrameworkCore/9.0.2": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-a0V7zj/VbYP6dTdWpUgE/r2PuLKtUGe2aJ0lVKkn/wP9ZhaxUz2kQydVfvOjCv2SKxlrqdBfHhPD4Cvlf+4ffA==",
-      "path": "microsoft.entityframeworkcore/10.0.10",
-      "hashPath": "microsoft.entityframeworkcore.10.0.10.nupkg.sha512"
+      "sha512": "sha512-P90ZuybgcpW32y985eOYxSoZ9IiL0UTYQlY0y1Pt1iHAnpZj/dQHREpSpry1RNvk8YjAeoAkWFdem5conqB9zQ==",
+      "path": "microsoft.entityframeworkcore/9.0.2",
+      "hashPath": "microsoft.entityframeworkcore.9.0.2.nupkg.sha512"
     },
-    "Microsoft.EntityFrameworkCore.Abstractions/10.0.10": {
+    "Microsoft.EntityFrameworkCore.Abstractions/9.0.2": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-bOzrFCl6uZCjaSh2bG1ToRQRdx+iXvxosCg9hFyG9OWeAzOFI4xev9OqKeWfKf/kAHyox2JnbcvLVf2ceA7sqA==",
-      "path": "microsoft.entityframeworkcore.abstractions/10.0.10",
-      "hashPath": "microsoft.entityframeworkcore.abstractions.10.0.10.nupkg.sha512"
+      "sha512": "sha512-oVSjNSIYHsk0N66eqAWgDcyo9etEFbUswbz7SmlYR6nGp05byHrJAYM5N8U2aGWJWJI6WvIC2e4TXJgH6GZ6HQ==",
+      "path": "microsoft.entityframeworkcore.abstractions/9.0.2",
+      "hashPath": "microsoft.entityframeworkcore.abstractions.9.0.2.nupkg.sha512"
     },
     "Microsoft.EntityFrameworkCore.Design/9.0.0": {
       "type": "package",

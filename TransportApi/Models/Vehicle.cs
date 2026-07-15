@@ -37,7 +37,7 @@ public partial class Vehicle
 
     public virtual ICollection<RouteHistory> RouteHistories { get; set; } = new List<RouteHistory>();
 
-    public virtual VehicleStatus? VehicleStatus { get; set; }
+    public virtual VehicleStatus VehicleStatus { get; set; } = null!;
 
-    public virtual VehicleType? VehicleType { get; set; }
+    public virtual VehicleType VehicleType { get; set; } = null!;
 }

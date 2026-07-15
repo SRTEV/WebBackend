@@ -6,10 +6,10 @@ namespace TransportApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class RoleController : ControllerBase
+    public class RoleCOntroller : ControllerBase
     {
         private readonly AppDbContext _context;
-        public RoleController(AppDbContext context)
+        public RoleCOntroller(AppDbContext context)
         {
             _context = context;
         }
@@ -19,6 +19,7 @@ namespace TransportApi.Controllers
         public async Task<ActionResult<IEnumerable<Role>>> GetRoles()
         {
             var roles = await _context.Roles.ToListAsync();
+
             return Ok(roles);
         }
 
@@ -41,6 +42,7 @@ namespace TransportApi.Controllers
         public async Task<ActionResult<Role>> PostRole(Role role)
         {
             _context.Roles.Add(role);
+            
             await _context.SaveChangesAsync();
 
             return CreatedAtAction(nameof(GetRole), new { id = role.Id }, role);
