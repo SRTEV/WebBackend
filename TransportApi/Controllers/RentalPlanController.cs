@@ -38,19 +38,17 @@
                 }
 
 
-            [HttpGet("{VehicleType}/{vehicleTypeId}")]
-            public async Task<ActionResult<RentalPlan>> GetRentalPlanByVehicleType(string VehicleType, int id)
-                {
-                    var rentalPlan = await _context.RentalPlans
-                        .Where(rp => rp.VehicleTypeId == id)
-                        .ToListAsync();
-                    if (rentalPlan == null)
-                    {   
-                        return NotFound();
-                    }
+         [HttpGet("VehicleType/{vehicleTypeId}")]
+public async Task<ActionResult<IEnumerable<RentalPlan>>> GetRentalPlanByVehicleType(int vehicleTypeId)
+{
 
-                    return Ok(rentalPlan);
-                }
+    var rentalPlans = await _context.RentalPlans
+        .Where(rp => rp.VehicleTypeId == vehicleTypeId)
+        .ToListAsync();
+
+
+    return Ok(rentalPlans);
+}
 
 
                 // POST: api/RentalPlan
