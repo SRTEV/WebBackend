@@ -42,7 +42,8 @@ namespace TransportApi.Controllers
         public async Task<ActionResult<Report>> PostReport(Report report)
         {
             _context.Reports.Add(report);
-            
+            report.CreatedAt = DateTime.Now;
+            report.Status = "NotReviewed";
             await _context.SaveChangesAsync();
 
             return CreatedAtAction(nameof(GetReport), new { id = report.Id }, report);
