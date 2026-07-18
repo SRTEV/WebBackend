@@ -19,7 +19,6 @@ namespace TransportApi.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Payment>>> GetPayments()
         {
-            // Видалено .Include(p => p.PaymentType)
             var payments = await _context.Payments.ToListAsync();
             return Ok(payments);
         }

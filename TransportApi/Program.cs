@@ -2,21 +2,21 @@ using Microsoft.EntityFrameworkCore;
 using TransportApi.Models;
 using TransportApi.Services;
 using System.Text.Json.Serialization;
-using Microsoft.AspNetCore.Authentication.JwtBearer; // Додайте це
-using Microsoft.IdentityModel.Tokens; // Додайте це
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 DotNetEnv.Env.Load();
 builder.Configuration.AddEnvironmentVariables();
 
-// 1. Налаштування БД
+ 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 var serverVersion = ServerVersion.Parse("8.0.46-mysql");
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseMySql(connectionString, serverVersion));
 
-// 2. Налаштування JWT Authentication
+ 
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;

@@ -19,7 +19,6 @@ namespace TransportApi.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Card>>> GetCards()
         {
-            // Видалено .Include(c => c.CardType)
             var cards = await _context.Cards.ToListAsync();
             return Ok(cards);
         }

@@ -19,7 +19,6 @@ namespace TransportApi.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Notification>>> GetNotifications()
         {
-            // Видалено .Include(n => n.NotificationType)
             var notifications = await _context.Notifications.ToListAsync();
             return Ok(notifications);
         }

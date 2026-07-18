@@ -19,7 +19,6 @@ namespace TransportApi.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Competition>>> GetCompetitions()
         {
-            // Видалено .Include(c => c.CompetitionType)
             var competitions = await _context.Competitions.ToListAsync();
             return Ok(competitions);
         }
