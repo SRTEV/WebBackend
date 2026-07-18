@@ -32,6 +32,7 @@ namespace TransportApi.Controllers
         {
             var users = await _context.Users
                 .Include(u => u.Role)
+                .Where(u => u.Deleted == false || u.Deleted == null)
                 .ToListAsync();
 
             return Ok(users);
@@ -44,7 +45,7 @@ namespace TransportApi.Controllers
         {
             var user = await _context.Users.FindAsync(id);
     
-            if (user == null)
+            if (user == null || user.Deleted == true)
             {
                 return NotFound();
             }
@@ -52,6 +53,7 @@ namespace TransportApi.Controllers
             return Ok(user);
         }
 
+        // POST: api/User/Delete/5
         [HttpPost("Delete/{id}")]
         [Authorize]
         public async Task<IActionResult> DeleteUser(int id)
@@ -70,40 +72,83 @@ namespace TransportApi.Controllers
             return Ok(new { message = "User deleted successfully" });
         }
 
-        // POST: api/User/ChangeRole/9
+        // POST: api/User/ChangeRole/5
         [HttpPost("ChangeRole/{id}")]
         [Authorize]
-        public async Task<IActionResult> ChangeRole(int id, [FromBody] ChangeRoleRequest model)
+        public async Task<IActionResult> ChangeRole(int id, [FromBody] ChangeRoleRequest request)
         {
-            if (model == null || string.IsNullOrWhiteSpace(model.RoleName))
+            if (request == null || string.IsNullOrWhiteSpace(request.RoleName))
             {
                 return BadRequest(new { message = "Role name is required" });
             }
 
-            var user = await _context.Users.Include(u => u.Role).FirstOrDefaultAsync(u => u.Id == id);
+            var user = await _context.Users.FindAsync(id);
             if (user == null)
             {
                 return NotFound(new { message = "User not found" });
             }
-            user.RoleId = model.RoleName.ToLower() switch
-            {
-                "user" => 1,
-                "admin" => 2,
-                "repairman" => 3,
-                _ => user.RoleId
-            };
 
+            var role = await _context.Set<Role>().FirstOrDefaultAsync(r => r.RoleName == request.RoleName);
+            if (role == null)
+            {
+                return BadRequest(new { message = "Invalid role name" });
+            }
+
+            user.RoleId = role.Id;
             user.UpdatedAt = DateTime.Now;
+            
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = $"Role changed successfully to {model.RoleName}" });
+            return Ok(new { message = $"Role changed successfully to {request.RoleName}" });
         }
 
+        // POST: api/User/Block/5
+        [HttpPost("Block/{id}")]
+        [Authorize]
+        public async Task<IActionResult> BlockUser(int id, [FromBody] BlockRequest request)
+        {
+            var user = await _context.Users.FindAsync(id);
+            if (user == null)
+            {
+                return NotFound(new { message = "User not found" });
+            }
+
+            user.IsBlocked = true;
+            user.BlockedReason = request.Reason;
+            user.UpdatedAt = DateTime.Now;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "User blocked successfully" });
+        }
+
+        // POST: api/User/Unblock/5
+        [HttpPost("Unblock/{id}")]
+        [Authorize]
+        public async Task<IActionResult> UnblockUser(int id)
+        {
+            var user = await _context.Users.FindAsync(id);
+            if (user == null)
+            {
+                return NotFound(new { message = "User not found" });
+            }
+
+            user.IsBlocked = false;
+            user.BlockedReason = null;
+            user.UpdatedAt = DateTime.Now;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "User unblocked successfully" });
+        }
+
+        // POST: api/User/login/app
         [HttpPost("login/app")]
         public async Task<IActionResult> LoginApp([FromBody] LoginRequest request)
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
             bool isPasswordValid = user != null && BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash);
+            
             if (user == null || !isPasswordValid)
             {
                 return Unauthorized(new { message = "Invalid email or password" });
@@ -114,6 +159,11 @@ namespace TransportApi.Controllers
             }
 
             var secretKey = _configuration["Jwt:Key"]; 
+            if (string.IsNullOrEmpty(secretKey))
+            {
+                return StatusCode(500, new { message = "JWT Secret Key is not configured on the server." });
+            }
+
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
@@ -139,6 +189,7 @@ namespace TransportApi.Controllers
             });
         }
 
+        // POST: api/User/register/app
         [HttpPost("register/app")]
         public async Task<IActionResult> RegisterApp([FromBody] RegisterRequest request)
         {
@@ -147,6 +198,7 @@ namespace TransportApi.Controllers
             {
                 return BadRequest(new { message = "User with this email already exists" });
             }
+            
             string passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
             var user = new User
             {
@@ -164,6 +216,11 @@ namespace TransportApi.Controllers
             await _context.SaveChangesAsync();
 
             var secretKey = _configuration["Jwt:Key"];
+            if (string.IsNullOrEmpty(secretKey))
+            {
+                return StatusCode(500, new { message = "JWT Secret Key is not configured on the server." });
+            }
+
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
@@ -196,13 +253,23 @@ namespace TransportApi.Controllers
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
             var user = await _context.Users.Include(u => u.Role).FirstOrDefaultAsync(u => u.Email == request.Email);
+            bool isPasswordValid = user != null && BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash);
 
-            if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+            if (user == null || !isPasswordValid)
             {
                 return Unauthorized(new { message = "Invalid email or password" });
             }
+            if (user.Deleted == true)
+            {
+                return Unauthorized(new { message = "This user account is deleted." });
+            }
 
             var secretKey = _configuration["Jwt:Key"];
+            if (string.IsNullOrEmpty(secretKey))
+            {
+                return StatusCode(500, new { message = "JWT Secret Key is not configured on the server." });
+            }
+
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
         
@@ -232,6 +299,7 @@ namespace TransportApi.Controllers
             });
         }
 
+        // POST: api/User/ResetPassword
         [HttpPost("ResetPassword")]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
         {
@@ -243,13 +311,11 @@ namespace TransportApi.Controllers
             }
 
             user.ResetLink = Guid.NewGuid().ToString();
-               
             await _context.SaveChangesAsync();
 
             try 
             {
                 await _emailService.SendResetPasswordEmail(user.Email, user.ResetLink);
-                
                 return Ok(new { message = "The password reset link has been sent to your email." });
             }
             catch (Exception ex)
@@ -262,6 +328,7 @@ namespace TransportApi.Controllers
             }
         }
 
+        // POST: api/User/ChangePassword
         [HttpPost("ChangePassword")]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
         {
@@ -273,7 +340,7 @@ namespace TransportApi.Controllers
             }
 
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
-            user.ResetLink = null; 
+            user.ResetLink = null;
             user.UpdatedAt = DateTime.Now;
 
             await _context.SaveChangesAsync();
@@ -308,6 +375,11 @@ namespace TransportApi.Controllers
         public class ChangeRoleRequest
         {
             public string RoleName { get; set; } = null!;
+        }
+
+        public class BlockRequest
+        {
+            public string Reason { get; set; } = null!;
         }
     }
 }
