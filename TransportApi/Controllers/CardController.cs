@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TransportApi.Models;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace TransportApi.Controllers
 {
@@ -39,12 +41,28 @@ namespace TransportApi.Controllers
 
         // POST: api/Card
         [HttpPost]
-        public async Task<ActionResult<Card>> PostCard(Card card)
-        {
-            _context.Cards.Add(card);
-            await _context.SaveChangesAsync();
+            [Authorize] // Обов'язково для отримання ID користувача
+public async Task<ActionResult<Card>> PostCard(Card card)
+{
+    // 1. Отримуємо ID поточного користувача з токена
+    var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
 
-            return CreatedAtAction(nameof(GetCard), new { id = card.Id }, card);
-        }
+    // 2. Зберігаємо картку окремо, щоб отримати її новий ID
+    _context.Cards.Add(card);
+    await _context.SaveChangesAsync();
+
+    // 3. Знаходимо користувача в БД
+    var user = await _context.Users.FindAsync(userId);
+    
+    // 4. Прив'язуємо картку до користувача
+    if (user != null)
+    {
+        user.CardId = card.Id; // Записуємо ID нової картки в поле CardId користувача
+        await _context.SaveChangesAsync();
+    }
+
+    return CreatedAtAction(nameof(GetCard), new { id = card.Id }, card);
+}
+        
     }
 }

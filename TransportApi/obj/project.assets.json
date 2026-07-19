@@ -2724,19 +2724,19 @@
     ]
   },
   "packageFolders": {
-    "/Users/arturtrokhymenko/.nuget/packages/": {}
+    "C:\\Users\\vozdi\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "/Users/arturtrokhymenko/Documents/GitHub/WebBackend/TransportApi/TransportApi.csproj",
+      "projectUniqueName": "D:\\gowno\\back\\WebBackend\\TransportApi\\TransportApi.csproj",
       "projectName": "TransportApi",
-      "projectPath": "/Users/arturtrokhymenko/Documents/GitHub/WebBackend/TransportApi/TransportApi.csproj",
-      "packagesPath": "/Users/arturtrokhymenko/.nuget/packages/",
-      "outputPath": "/Users/arturtrokhymenko/Documents/GitHub/WebBackend/TransportApi/obj/",
+      "projectPath": "D:\\gowno\\back\\WebBackend\\TransportApi\\TransportApi.csproj",
+      "packagesPath": "C:\\Users\\vozdi\\.nuget\\packages\\",
+      "outputPath": "D:\\gowno\\back\\WebBackend\\TransportApi\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "/Users/arturtrokhymenko/.nuget/NuGet/NuGet.Config"
+        "C:\\Users\\vozdi\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net10.0"
@@ -2834,7 +2834,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/10.0.301/PortableRuntimeIdentifierGraph.json",
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json",
         "packagesToPrune": {
           "Microsoft.AspNetCore": "(,10.0.32767]",
           "Microsoft.AspNetCore.Antiforgery": "(,10.0.32767]",
@@ -3257,7 +3257,7 @@
       "code": "NU1603",
       "level": "Warning",
       "warningLevel": 1,
-      "message": "TransportApi depends on Pomelo.EntityFrameworkCore.MySql (>= 9.0.0-preview.2.efcore.9.0) but Pomelo.EntityFrameworkCore.MySql 9.0.0-preview.2.efcore.9.0 was not found. Pomelo.EntityFrameworkCore.MySql 9.0.0-preview.2.efcore.9.0.0 was resolved instead.",
+      "message": "TransportApi jest zależny od Pomelo.EntityFrameworkCore.MySql (>= 9.0.0-preview.2.efcore.9.0), ale Pomelo.EntityFrameworkCore.MySql 9.0.0-preview.2.efcore.9.0 nie został znaleziony. Zamiast tego Pomelo.EntityFrameworkCore.MySql 9.0.0-preview.2.efcore.9.0.0 został rozwiązany.",
       "libraryId": "Pomelo.EntityFrameworkCore.MySql",
       "targetGraphs": [
         "net10.0"
@@ -3267,7 +3267,7 @@
       "code": "NU1903",
       "level": "Warning",
       "warningLevel": 1,
-      "message": "Package 'Microsoft.OpenApi' 2.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-v5pm-xwqc-g5wc",
+      "message": "Pakiet „Microsoft.OpenApi” 2.0.0 ma znane wysoka luki w zabezpieczeniach o ważności, https://github.com/advisories/GHSA-v5pm-xwqc-g5wc",
       "libraryId": "Microsoft.OpenApi",
       "targetGraphs": [
         "net10.0"
