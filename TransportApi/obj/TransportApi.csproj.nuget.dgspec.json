@@ -1,20 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "D:\\gowno\\back\\WebBackend\\TransportApi\\TransportApi.csproj": {}
+    "/Users/arturtrokhymenko/Documents/GitHub/WebBackend/TransportApi/TransportApi.csproj": {}
   },
   "projects": {
-    "D:\\gowno\\back\\WebBackend\\TransportApi\\TransportApi.csproj": {
+    "/Users/arturtrokhymenko/Documents/GitHub/WebBackend/TransportApi/TransportApi.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\gowno\\back\\WebBackend\\TransportApi\\TransportApi.csproj",
+        "projectUniqueName": "/Users/arturtrokhymenko/Documents/GitHub/WebBackend/TransportApi/TransportApi.csproj",
         "projectName": "TransportApi",
-        "projectPath": "D:\\gowno\\back\\WebBackend\\TransportApi\\TransportApi.csproj",
-        "packagesPath": "C:\\Users\\vozdi\\.nuget\\packages\\",
-        "outputPath": "D:\\gowno\\back\\WebBackend\\TransportApi\\obj\\",
+        "projectPath": "/Users/arturtrokhymenko/Documents/GitHub/WebBackend/TransportApi/TransportApi.csproj",
+        "packagesPath": "/Users/arturtrokhymenko/.nuget/packages/",
+        "outputPath": "/Users/arturtrokhymenko/Documents/GitHub/WebBackend/TransportApi/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\vozdi\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "/Users/arturtrokhymenko/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net10.0"
@@ -68,7 +68,7 @@
             },
             "Microsoft.EntityFrameworkCore": {
               "target": "Package",
-              "version": "[9.0.2, )"
+              "version": "[9.0.0, )"
             },
             "Microsoft.EntityFrameworkCore.Design": {
               "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
@@ -78,7 +78,7 @@
             },
             "Microsoft.EntityFrameworkCore.Relational": {
               "target": "Package",
-              "version": "[9.0.2, )"
+              "version": "[9.0.0, )"
             },
             "MimeKit": {
               "target": "Package",
@@ -86,7 +86,7 @@
             },
             "Pomelo.EntityFrameworkCore.MySql": {
               "target": "Package",
-              "version": "[9.0.0-preview.2.efcore.9.0, )"
+              "version": "[9.0.0, )"
             },
             "System.IdentityModel.Tokens.Jwt": {
               "target": "Package",
@@ -112,7 +112,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json",
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/10.0.301/PortableRuntimeIdentifierGraph.json",
           "packagesToPrune": {
             "Microsoft.AspNetCore": "(,10.0.32767]",
             "Microsoft.AspNetCore.Antiforgery": "(,10.0.32767]",

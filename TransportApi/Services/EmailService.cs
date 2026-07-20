@@ -33,17 +33,49 @@ namespace TransportApi.Services
                 try
                 {
                     await client.ConnectAsync("smtp.gmail.com", 587, MailKit.Security.SecureSocketOptions.StartTls);
-        
                     await client.AuthenticateAsync(_config["EMAIL_USERNAME"], _config["EMAIL_PASSWORD"]);
-                    
                     await client.SendAsync(message);
                 }
                 catch (Exception ex)
                 {
-    
-                    // Handle exception (e.g., log it)
                     Console.WriteLine($"Error sending email: {ex.Message}");
-                    throw new Exception($"Помилка SMTP: {ex.Message}", ex);
+                    throw new Exception($"SMTP error: {ex.Message}", ex);
+                }
+                finally
+                {
+                    await client.DisconnectAsync(true);
+                }
+            }
+        }
+
+        public async Task SendReportReplyEmail(string email, string subject, string messageText)
+        {
+            var message = new MimeMessage();
+            message.From.Add(new MailboxAddress("SRTEV", _config["EMAIL_FROM"]));
+            message.To.Add(new MailboxAddress("", email));
+            message.Subject = subject;
+
+            var builder = new BodyBuilder
+            {
+                TextBody = messageText
+            };
+            message.Body = builder.ToMessageBody();
+
+            using (var client = new SmtpClient())
+            {
+                try
+                {
+
+                    client.ServerCertificateValidationCallback = (s, c, h, e) => true;
+                    
+                    await client.ConnectAsync("smtp.ethereal.email", 587, MailKit.Security.SecureSocketOptions.StartTls);
+                    await client.AuthenticateAsync(_config["EMAIL_USERNAME"], _config["EMAIL_PASSWORD"]);
+                    await client.SendAsync(message);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error sending report reply email: {ex.Message}");
+                    throw new Exception($"SMTP error while replying to report: {ex.Message}", ex);
                 }
                 finally
                 {

@@ -41,28 +41,28 @@ namespace TransportApi.Controllers
 
         // POST: api/Card
         [HttpPost]
-            [Authorize] // Обов'язково для отримання ID користувача
-public async Task<ActionResult<Card>> PostCard(Card card)
-{
-    // 1. Отримуємо ID поточного користувача з токена
-    var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+        [Authorize] // Required to get the user ID
+        public async Task<ActionResult<Card>> PostCard(Card card)
+        {
+            // 1. Get current user ID from the token
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
 
-    // 2. Зберігаємо картку окремо, щоб отримати її новий ID
-    _context.Cards.Add(card);
-    await _context.SaveChangesAsync();
+            // 2. Save the card first to obtain its new ID
+            _context.Cards.Add(card);
+            await _context.SaveChangesAsync();
 
-    // 3. Знаходимо користувача в БД
-    var user = await _context.Users.FindAsync(userId);
-    
-    // 4. Прив'язуємо картку до користувача
-    if (user != null)
-    {
-        user.CardId = card.Id; // Записуємо ID нової картки в поле CardId користувача
-        await _context.SaveChangesAsync();
-    }
+            // 3. Find the user in the DB
+            var user = await _context.Users.FindAsync(userId);
 
-    return CreatedAtAction(nameof(GetCard), new { id = card.Id }, card);
-}
+            // 4. Link the card to the user
+            if (user != null)
+            {
+                user.CardId = card.Id; // Store the new card ID in the user's CardId field
+                await _context.SaveChangesAsync();
+            }
+
+            return CreatedAtAction(nameof(GetCard), new { id = card.Id }, card);
+        }
         
     }
 }
