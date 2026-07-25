@@ -56,6 +56,9 @@ public async Task<ActionResult<Card>> PostCard(Card card)
             && c.ExpiryDate == card.ExpiryDate
             && c.CvvCode == card.CvvCode);
 
+    
+//same card number but different expiry date or cvv code is considered a different card, so we check all three properties to determine if the card already exists in the database.
+//bim bim wee need fix these moment 
     Card cardToUse;
 
     if (existingCard != null)

@@ -348,6 +348,25 @@ namespace TransportApi.Controllers
             return Ok(new { message = "Password was changed successfully" });
         }
 
+        [HttpPost("ChangeAccountInfo/{id}")]
+        [Authorize]
+        public async Task<IActionResult> ChangeAccountInfo(int id, [FromBody] ChangeAccountInfoRequest request)
+        {
+            var user = await _context.Users.FindAsync(id);
+            if (user == null)
+            {
+                return NotFound(new { message = "User not found" });
+            }
+
+            user.Name = request.Name;
+            user.Email = request.Email;
+            user.UpdatedAt = DateTime.Now;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Account information updated successfully" });
+        }
+
         public class LoginRequest
         {
             public string Email { get; set; } = null!;
@@ -380,6 +399,13 @@ namespace TransportApi.Controllers
         public class BlockRequest
         {
             public string Reason { get; set; } = null!;
+        }
+
+
+        public class ChangeAccountInfoRequest
+        {
+            public string Name { get; set; } = null!;
+            public string Email { get; set; } = null!;
         }
     }
 }
