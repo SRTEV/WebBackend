@@ -367,6 +367,26 @@ namespace TransportApi.Controllers
             return Ok(new { message = "Account information updated successfully" });
         }
 
+        [HttpPost("ChangeLoggedPassword/{id}")]
+        [Authorize]
+        public async Task<IActionResult> ChangePassword(int id, [FromBody] ChangePasswordRequest request)
+        {
+            var user = await _context.Users.FindAsync(id);
+            if (user == null)
+            {
+                return NotFound(new { message = "User not found" });
+            }
+
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+            user.UpdatedAt = DateTime.Now;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Password changed successfully" });
+        }
+
+
+
         public class LoginRequest
         {
             public string Email { get; set; } = null!;
