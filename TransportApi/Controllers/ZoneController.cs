@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TransportApi.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace TransportApi.Controllers
 {
@@ -16,6 +17,7 @@ namespace TransportApi.Controllers
 
         // GET: api/Zone
         [HttpGet]
+        [Authorize]
         public async Task<ActionResult<IEnumerable<Zone>>> GetZones()
         {
             return await _context.Zones.ToListAsync();
@@ -23,6 +25,7 @@ namespace TransportApi.Controllers
 
         // GET: api/Zone/5
         [HttpGet("{id}")]
+        [Authorize]
         public async Task<ActionResult<Zone>> GetZone(int id)
         {
             var zone = await _context.Zones.FindAsync(id);
@@ -35,8 +38,17 @@ namespace TransportApi.Controllers
             return zone;
         }
 
+        [HttpGet("VehicleType/{vehicleTypeId}")]
+        [Authorize]
+        public async Task<ActionResult<IEnumerable<Zone>>> GetZonesByVehicleType(int vehicleTypeId)
+        {
+            return await _context.Zones.Where(z => z.VehicleTypeId == vehicleTypeId).ToListAsync();
+            
+        }
+
         // POST: api/Zone
         [HttpPost]
+        [Authorize]
         public async Task<ActionResult<Zone>> PostZone(Zone zone)
         {
             _context.Zones.Add(zone);
