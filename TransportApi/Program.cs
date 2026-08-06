@@ -10,7 +10,11 @@ var builder = WebApplication.CreateBuilder(args);
 DotNetEnv.Env.Load();
 builder.Configuration.AddEnvironmentVariables();
 
- 
+ builder.Services.AddControllers(options =>
+{
+    options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true;
+});
+
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 var serverVersion = ServerVersion.Parse("8.0.46-mysql");
 builder.Services.AddDbContext<AppDbContext>(options =>

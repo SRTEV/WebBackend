@@ -9,6 +9,7 @@ namespace TransportApi.Controllers
     public class GoalTypeController : ControllerBase
     {
         private readonly AppDbContext _context;
+
         public GoalTypeController(AppDbContext context)
         {
             _context = context;
@@ -16,24 +17,36 @@ namespace TransportApi.Controllers
 
         // GET: api/GoalType
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<GoalType>>> GetGoalTypes()
+        public async Task<IActionResult> GetGoalTypes()
         {
-            var goalTypes = await _context.GoalTypes.ToListAsync();
+            try
+            {
+                var goalTypes = await _context.GoalTypes
+                    .Select(g => new 
+                    { 
+                        id = g.Id, 
+                        name = g.Name 
+                    })
+                    .ToListAsync();
 
-            return Ok(goalTypes);
+                return Ok(goalTypes);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
         }
 
         // GET: api/GoalType/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<GoalType>> GetGoalType(int id)
+        public async Task<IActionResult> GetGoalType(int id)
         {
-            var goalType = await _context.GoalTypes.FindAsync(id);
+            var goalType = await _context.GoalTypes
+                .Where(g => g.Id == id)
+                .Select(g => new { id = g.Id, name = g.Name })
+                .FirstOrDefaultAsync();
 
-            if (goalType == null)
-            {
-                return NotFound();
-            }
-
+            if (goalType == null) return NotFound();
             return Ok(goalType);
         }
 
@@ -42,9 +55,7 @@ namespace TransportApi.Controllers
         public async Task<ActionResult<GoalType>> PostGoalType(GoalType goalType)
         {
             _context.GoalTypes.Add(goalType);
-            
             await _context.SaveChangesAsync();
-
             return CreatedAtAction(nameof(GetGoalType), new { id = goalType.Id }, goalType);
         }
     }
