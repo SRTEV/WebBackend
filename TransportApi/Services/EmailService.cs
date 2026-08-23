@@ -36,7 +36,7 @@ namespace TransportApi.Services
             {
                 try
                 {
-                    await client.ConnectAsync("smtp.gmail.com", 587, MailKit.Security.SecureSocketOptions.StartTls);
+                    await client.ConnectAsync(_config["EMAIL_HOST"], 587, MailKit.Security.SecureSocketOptions.StartTls);
                     await client.AuthenticateAsync(userName, password);
                     await client.SendAsync(message);
                 }
@@ -76,7 +76,7 @@ namespace TransportApi.Services
 
                     client.ServerCertificateValidationCallback = (s, c, h, e) => true;
                     
-                    await client.ConnectAsync("smtp.ethereal.email", 587, MailKit.Security.SecureSocketOptions.StartTls);
+                    await client.ConnectAsync(_config["EMAIL_HOST"], 587, MailKit.Security.SecureSocketOptions.StartTls);
                     await client.AuthenticateAsync(userName, password);
                     await client.SendAsync(message);
                 }
