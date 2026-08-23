@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TransportApi.Models;
-
+using Microsoft.AspNetCore.Authorization;
 namespace TransportApi.Controllers
 {
     [Route("api/[controller]")]
@@ -32,6 +32,7 @@ namespace TransportApi.Controllers
 
         // GET: api/Vehicle/5
         [HttpGet("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<Vehicle>> GetVehicle(int id)
         {
             var vehicle = await _context.Vehicles.FindAsync(id);
@@ -46,6 +47,7 @@ namespace TransportApi.Controllers
 
         // POST: api/Vehicle
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<Vehicle>> PostVehicle(Vehicle vehicle)
         {
             vehicle.VehicleType = null;
@@ -59,6 +61,7 @@ namespace TransportApi.Controllers
 
         // PUT: api/Vehicle/5
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> PutVehicle(int id, Vehicle vehicle)
         {
             if (id != vehicle.Id)
@@ -92,6 +95,7 @@ namespace TransportApi.Controllers
 
         // DELETE: api/Vehicle/5
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteVehicle(int id)
         {
             var vehicle = await _context.Vehicles.FindAsync(id);
@@ -107,6 +111,22 @@ namespace TransportApi.Controllers
 
             return NoContent();
         }
+[HttpGet("scan/{QrCode}")]
+[Authorize]
+public async Task<ActionResult<Vehicle>> ScanVehicle(string QrCode)
+{
+    var vehicle = await _context.Vehicles
+        .Include(v => v.VehicleStatus) 
+        .Include(v => v.VehicleType)   
+        .FirstOrDefaultAsync(v => v.QrCode == QrCode && (v.Deleted == null || v.Deleted == false));
+
+    if (vehicle == null)
+    {
+        return NotFound();
+    }
+
+    return Ok(vehicle);
+}
 
         private bool VehicleExists(int id)
         {

@@ -447,6 +447,7 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.BatteryCapacity).HasColumnName("Battery_capacity");
             entity.Property(e => e.BatteryLevel).HasColumnName("Battery_level");
             entity.Property(e => e.ElectricityConsumption).HasColumnName("Electricity_consumption");
+            entity.Property(e => e.In_Zone).HasColumnName("In_Zone");
             entity.Property(e => e.LastActivity)
                 .HasColumnType("timestamp")
                 .HasColumnName("Last_activity");
@@ -463,6 +464,7 @@ public partial class AppDbContext : DbContext
                 .HasColumnName("Scan_time");
             entity.Property(e => e.VehicleStatusId).HasColumnName("Vehicle_StatusID");
             entity.Property(e => e.VehicleTypeId).HasColumnName("Vehicle_TypeID");
+            
 
             entity.HasOne(d => d.VehicleStatus).WithMany(p => p.Vehicles)
                 .HasForeignKey(d => d.VehicleStatusId)
@@ -498,7 +500,7 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.CreatedAt)
                 .HasColumnType("timestamp")
                 .HasColumnName("Created_at");
-            entity.Property(e => e.IsRestrictedArea).HasColumnName("Is_Restricted_area");
+            
             entity.Property(e => e.Name).HasMaxLength(255);
             entity.Property(e => e.UpdatedAt)
                 .HasColumnType("timestamp")

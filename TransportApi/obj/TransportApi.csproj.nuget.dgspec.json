@@ -84,6 +84,10 @@
               "target": "Package",
               "version": "[2.0.0, )"
             },
+            "Microsoft.OpenApi": {
+              "target": "Package",
+              "version": "[2.3.12, )"
+            },
             "MimeKit": {
               "target": "Package",
               "version": "[4.17.0, )"

@@ -31,6 +31,8 @@ public partial class Vehicle
 
     public int VehicleStatusId { get; set; }
 
+    public bool In_Zone { get; set; }
+
     public virtual Rental? Rental { get; set; }
 
     public virtual ICollection<Report> Reports { get; set; } = new List<Report>();

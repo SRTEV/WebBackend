@@ -653,7 +653,7 @@
           }
         }
       },
-      "Microsoft.OpenApi/2.0.0": {
+      "Microsoft.OpenApi/2.3.12": {
         "type": "package",
         "compile": {
           "lib/net8.0/Microsoft.OpenApi.dll": {
@@ -2331,10 +2331,10 @@
         "microsoft.identitymodel.tokens.nuspec"
       ]
     },
-    "Microsoft.OpenApi/2.0.0": {
-      "sha512": "GGYLfzV/G/ct80OZ45JxnWP7NvMX1BCugn/lX7TH5o0lcVaviavsLMTxmFV2AybXWjbi3h6FF1vgZiTK6PXndw==",
+    "Microsoft.OpenApi/2.3.12": {
+      "sha512": "skMV7AUpMXve7Gbdjx3kUsNXLP6AuZ3+dnAqlt17L1qOuH+X+trWpjJg2wA0Z5fgAZTP5aumQ/31znrZ2PadGA==",
       "type": "package",
-      "path": "microsoft.openapi/2.0.0",
+      "path": "microsoft.openapi/2.3.12",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
@@ -2345,7 +2345,7 @@
         "lib/netstandard2.0/Microsoft.OpenApi.dll",
         "lib/netstandard2.0/Microsoft.OpenApi.pdb",
         "lib/netstandard2.0/Microsoft.OpenApi.xml",
-        "microsoft.openapi.2.0.0.nupkg.sha512",
+        "microsoft.openapi.2.3.12.nupkg.sha512",
         "microsoft.openapi.nuspec"
       ]
     },
@@ -2717,8 +2717,13 @@
       "Microsoft.AspNetCore.OpenApi >= 10.0.9",
       "Microsoft.EntityFrameworkCore >= 9.0.2",
       "Microsoft.EntityFrameworkCore.Design >= 9.0.0",
+<<<<<<< HEAD
       "Microsoft.EntityFrameworkCore.Relational >= 9.0.2",
       "Microsoft.OpenApi >= 2.0.0",
+=======
+      "Microsoft.EntityFrameworkCore.Relational >= 9.0.0",
+      "Microsoft.OpenApi >= 2.3.12",
+>>>>>>> 2c2eb0bf0806972710372fcc417471861295fee0
       "MimeKit >= 4.17.0",
       "Pomelo.EntityFrameworkCore.MySql >= 9.0.0",
       "System.IdentityModel.Tokens.Jwt >= 8.19.1"
@@ -2806,6 +2811,10 @@
           "Microsoft.OpenApi": {
             "target": "Package",
             "version": "[2.0.0, )"
+          },
+          "Microsoft.OpenApi": {
+            "target": "Package",
+            "version": "[2.3.12, )"
           },
           "MimeKit": {
             "target": "Package",
@@ -3262,7 +3271,11 @@
       "code": "NU1903",
       "level": "Warning",
       "warningLevel": 1,
+<<<<<<< HEAD
       "message": "Package 'Microsoft.OpenApi' 2.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-v5pm-xwqc-g5wc",
+=======
+      "message": "Package 'Microsoft.OpenApi' 2.3.12 has a known high severity vulnerability, https://github.com/advisories/GHSA-v5pm-xwqc-g5wc",
+>>>>>>> 2c2eb0bf0806972710372fcc417471861295fee0
       "libraryId": "Microsoft.OpenApi",
       "targetGraphs": [
         "net10.0"

@@ -15,8 +15,12 @@ namespace TransportApi.Services
 
         public async Task SendResetPasswordEmail(string email, string resetLink)
         {
+            var fromAddress = _config["EMAIL_FROM"] ?? throw new InvalidOperationException("Missing EMAIL_FROM configuration.");
+            var userName = _config["EMAIL_USERNAME"] ?? throw new InvalidOperationException("Missing EMAIL_USERNAME configuration.");
+            var password = _config["EMAIL_PASSWORD"] ?? throw new InvalidOperationException("Missing EMAIL_PASSWORD configuration.");
+
             var message = new MimeMessage();
-            message.From.Add(new MailboxAddress("SRTEV", _config["EMAIL_FROM"]));
+            message.From.Add(new MailboxAddress("SRTEV", fromAddress));
             message.To.Add(new MailboxAddress("", email));
             message.Subject = "Password Reset";
 
@@ -33,7 +37,7 @@ namespace TransportApi.Services
                 try
                 {
                     await client.ConnectAsync("smtp.gmail.com", 587, MailKit.Security.SecureSocketOptions.StartTls);
-                    await client.AuthenticateAsync(_config["EMAIL_USERNAME"], _config["EMAIL_PASSWORD"]);
+                    await client.AuthenticateAsync(userName, password);
                     await client.SendAsync(message);
                 }
                 catch (Exception ex)
@@ -50,8 +54,12 @@ namespace TransportApi.Services
 
         public async Task SendReportReplyEmail(string email, string subject, string messageText)
         {
+            var fromAddress = _config["EMAIL_FROM"] ?? throw new InvalidOperationException("Missing EMAIL_FROM configuration.");
+            var userName = _config["EMAIL_USERNAME"] ?? throw new InvalidOperationException("Missing EMAIL_USERNAME configuration.");
+            var password = _config["EMAIL_PASSWORD"] ?? throw new InvalidOperationException("Missing EMAIL_PASSWORD configuration.");
+
             var message = new MimeMessage();
-            message.From.Add(new MailboxAddress("SRTEV", _config["EMAIL_FROM"]));
+            message.From.Add(new MailboxAddress("SRTEV", fromAddress));
             message.To.Add(new MailboxAddress("", email));
             message.Subject = subject;
 
@@ -69,7 +77,7 @@ namespace TransportApi.Services
                     client.ServerCertificateValidationCallback = (s, c, h, e) => true;
                     
                     await client.ConnectAsync("smtp.ethereal.email", 587, MailKit.Security.SecureSocketOptions.StartTls);
-                    await client.AuthenticateAsync(_config["EMAIL_USERNAME"], _config["EMAIL_PASSWORD"]);
+                    await client.AuthenticateAsync(userName, password);
                     await client.SendAsync(message);
                 }
                 catch (Exception ex)
