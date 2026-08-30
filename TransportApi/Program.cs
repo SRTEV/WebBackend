@@ -59,7 +59,7 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddScoped<IEmailService, EmailService>();
-
+builder.Services.AddHostedService<UserCleanupService>();
 var app = builder.Build();
 
 app.UseStaticFiles();
