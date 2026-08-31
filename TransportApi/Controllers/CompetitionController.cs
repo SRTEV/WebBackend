@@ -73,25 +73,47 @@ namespace TransportApi.Controllers
             });
         }
 
-        // POST: api/Competition
-        [HttpPost]
-        public async Task<IActionResult> PostCompetition([FromBody] Competition competition)
+
+[HttpPost]
+public async Task<IActionResult> PostCompetition([FromBody] Competition competition)
+{
+    if (!ModelState.IsValid)
+    {
+        return BadRequest(ModelState);
+    }
+
+    competition.VehicleType = null!;
+
+    var incomingGoals = competition.GoalTypes.ToList();
+    var incomingRewards = competition.RewardTypes.ToList();
+    
+    competition.GoalTypes.Clear();
+    competition.RewardTypes.Clear();
+
+    foreach (var g in incomingGoals)
+    {
+        var existingGoal = await _context.GoalTypes.FindAsync(g.Id);
+        if (existingGoal != null)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
-            // Очищаємо навігаційне поле VehicleType, щоб EF не намагався створити новий тип транспорту
-            competition.VehicleType = null!;
-
-            _context.Competitions.Add(competition);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction(nameof(GetCompetition), new { id = competition.Id }, competition);
+            competition.GoalTypes.Add(existingGoal);
         }
+    }
 
-        // PUT: api/Competition/5
+    foreach (var r in incomingRewards)
+    {
+        var existingReward = await _context.RewardTypes.FindAsync(r.Id);
+        if (existingReward != null)
+        {
+            competition.RewardTypes.Add(existingReward);
+        }
+    }
+
+    _context.Competitions.Add(competition);
+    await _context.SaveChangesAsync();
+
+    return CreatedAtAction(nameof(GetCompetition), new { id = competition.Id }, competition);
+}
+
         [HttpPut("{id}")]
         public async Task<IActionResult> PutCompetition(int id, [FromBody] Competition competition)
         {

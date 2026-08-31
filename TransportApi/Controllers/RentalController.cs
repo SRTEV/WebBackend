@@ -129,15 +129,55 @@ namespace TransportApi.Controllers
            
             rental.EndTime = DateTime.UtcNow;
             rental.Distance = (decimal)dto.Distance; 
-            rental.Vehicle.PositionX = dto.positionX;
-            rental.Vehicle.PositionY = dto.positionY;
-            //rental.Vehicle.LastActivity = DateTime.UtcNow; API!!!!
+            
             _context.Rentals.Update(rental);
             
-
             rental.Vehicle.VehicleStatusId = availableStatus.Id;
             _context.Vehicles.Update(rental.Vehicle);
-            
+
+            // ==========================================
+            // КІНЕЦЬ ОРЕНДИ: ТІЛЬКИ БАЛИ ТА АКТИВНІ ЧЕЛЕНДЖІ
+            // ==========================================
+            var currentDate = DateOnly.FromDateTime(DateTime.UtcNow);
+            var vehicleTypeId = rental.Vehicle.VehicleTypeId; 
+            var userId = rental.UserId;
+
+            // Конвертуємо кілометри у метри для цілочисельного Score
+            int distanceScore = (int)Math.Round(dto.Distance * 1000);
+
+            var activeCompetitions = await _context.Competitions
+                .Where(c => c.VehicleTypeId == vehicleTypeId && c.StartDate <= currentDate && c.EndDate >= currentDate)
+                .Include(c => c.GoalTypes)
+                .ToListAsync();
+
+            foreach (var competition in activeCompetitions)
+            {
+                bool isMarathon = competition.GoalTypes.Any(gt => gt.Name == "Marathon");
+                if (!isMarathon) continue;
+
+                var userResult = await _context.UsersResults
+                    .FirstOrDefaultAsync(ur => ur.UserId == userId && ur.CompetitionId == competition.Id);
+
+                if (userResult != null)
+                {
+                    userResult.Score += distanceScore;
+                    _context.UsersResults.Update(userResult);
+                }
+                else
+                {
+                    var newUserResult = new UsersResult
+                    {
+                        UserId = userId,
+                        CompetitionId = competition.Id,
+                        Score = distanceScore,
+                        Rank = 0,
+                        RewardAmount = 0
+                    };
+                    _context.UsersResults.Add(newUserResult);
+                }
+            }
+            // ==========================================
+
             await _context.SaveChangesAsync();
 
             return Ok(rental);
@@ -174,8 +214,8 @@ namespace TransportApi.Controllers
         {
             public int RentalId { get; set; }
             public double Distance { get; set; }
-            public decimal positionX{ get; set; }
-            public decimal positionY{ get; set; }
+            public decimal positionX { get; set; }
+            public decimal positionY { get; set; }
         }
     }
 }

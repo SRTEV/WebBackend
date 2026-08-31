@@ -57,9 +57,10 @@ builder.Services.AddCors(options =>
               .AllowAnyMethod();
     });
 });
-
+builder.Services.AddHttpClient();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddHostedService<UserCleanupService>();
+builder.Services.AddHostedService<CompetitionFinalizerBackgroundService>();
 var app = builder.Build();
 
 app.UseStaticFiles();
