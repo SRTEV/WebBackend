@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TransportApi.Models;
-
+using Microsoft.AspNetCore.Authorization;   
 namespace TransportApi.Controllers
 {
     [Route("api/[controller]")]
@@ -72,7 +72,61 @@ namespace TransportApi.Controllers
                 RewardTypes = c.RewardTypes.Select(r => new { r.Id, Name = r.Name ?? "", Unit = r.Unit ?? "" })
             });
         }
+[HttpGet("latest/{vehicleTypeId}")]
+[Authorize]
+        public async Task<IActionResult> GetLatestCompetition(int vehicleTypeId)
+        {
+            var currentDate = DateOnly.FromDateTime(DateTime.UtcNow);
 
+            // 1. Спочатку шукаємо активний челендж на сьогодні
+            var competition = await _context.Competitions
+                .Include(c => c.VehicleType)
+                .Include(c => c.GoalTypes)
+                .Include(c => c.RewardTypes)
+                .Where(c => c.VehicleTypeId == vehicleTypeId && c.StartDate <= currentDate && c.EndDate >= currentDate)
+                .OrderByDescending(c => c.StartDate)
+                .FirstOrDefaultAsync();
+
+            bool isEnded = false;
+
+            // 2. Якщо активного нема, шукаємо останній завершений (який вже минув)
+            if (competition == null)
+            {
+                competition = await _context.Competitions
+                    .Include(c => c.VehicleType)
+                    .Include(c => c.GoalTypes)
+                    .Include(c => c.RewardTypes)
+                    .Where(c => c.VehicleTypeId == vehicleTypeId && c.EndDate < currentDate)
+                    .OrderByDescending(c => c.EndDate)
+                    .FirstOrDefaultAsync();
+
+                if (competition != null)
+                {
+                    isEnded = true; // Позначаємо, що челендж уже закінчився
+                }
+            }
+
+            // 3. Якщо взагалі нічого немає для цього типу транспорту
+            if (competition == null)
+            {
+                return NotFound(new { message = "Челенджів нема, пусто" });
+            }
+
+            // Повертаємо результат із додатковим полем isEnded
+            return Ok(new
+            {
+                competition.Id,
+                StartDate = competition.StartDate.ToString("yyyy-MM-dd"),
+                EndDate = competition.EndDate.ToString("yyyy-MM-dd"),
+                Description = competition.Description ?? "",
+                competition.GoalValue,
+                competition.VehicleTypeId,
+                VehicleTypeName = competition.VehicleType?.Name ?? "",
+                IsEnded = isEnded, // true — якщо завершився, false — якщо активний
+                GoalTypes = competition.GoalTypes.Select(g => new { g.Id, Name = g.Name ?? "" }),
+                RewardTypes = competition.RewardTypes.Select(r => new { r.Id, Name = r.Name ?? "", Unit = r.Unit ?? "" })
+            });
+        }
 
 [HttpPost]
 public async Task<IActionResult> PostCompetition([FromBody] Competition competition)

@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TransportApi.Models;
-
+using Microsoft.AspNetCore.Authorization;
 namespace TransportApi.Controllers
 {
     [Route("api/[controller]")]
@@ -35,6 +35,36 @@ namespace TransportApi.Controllers
 
             return usersResult;
         }
+
+        // GET: api/UsersResult/leaderboard/5 
+        [HttpGet("leaderboard/{competitionId}")]
+        [Authorize]
+        public async Task<IActionResult> GetLeaderboard(int competitionId)
+        {
+            var results = await _context.UsersResults
+                .Where(ur => ur.CompetitionId == competitionId)
+                .Include(ur => ur.User)
+                .OrderByDescending(ur => ur.Score) 
+                .ToListAsync();
+
+            if (results == null || !results.Any())
+            {
+                return NotFound(new { message = "No participants yet" });
+            }
+
+            int rank = 1;
+            var leaderboard = results.Select(ur => new
+            {
+                Rank = rank++,
+                UserId = ur.UserId,
+                Name = ur.User?.Name ?? "Unknown",
+                Score = ur.Score
+            });
+
+            return Ok(leaderboard);
+        }
+
+
 
         // POST: api/UsersResult
         [HttpPost]

@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using TransportApi.Models; 
+using TransportApi.Models;
 
 namespace TransportApi.Services
 {
@@ -11,8 +11,8 @@ namespace TransportApi.Services
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<CompetitionFinalizerBackgroundService> _logger;
         
-     
-        private readonly TimeSpan _checkInterval = TimeSpan.FromDays(1);
+        // Інтервал перевірки та перерахунку рейтингів (наприклад, кожні 5 хвилин)
+        private readonly TimeSpan _checkInterval = TimeSpan.FromMinutes(5);
 
         public CompetitionFinalizerBackgroundService(
             IServiceProvider serviceProvider, 
@@ -24,67 +24,69 @@ namespace TransportApi.Services
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation("Background service for finalizing competitions started.");
+            _logger.LogInformation("Фоновий сервіс розрахунку рейтингів та челенджів запущено.");
 
             while (!stoppingToken.IsCancellationRequested)
             {
                 try
                 {
-                    await CheckAndProcessCompetitionsAsync();
+                    await ProcessCompetitionsAsync();
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error in the background service for finalizing competitions.");
+                    _logger.LogError(ex, "Помилка у фоновому сервісі розрахунку челенджів.");
                 }
 
                 await Task.Delay(_checkInterval, stoppingToken);
             }
         }
 
-        private async Task CheckAndProcessCompetitionsAsync()
+        private async Task ProcessCompetitionsAsync()
         {
             using var scope = _serviceProvider.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
             var currentDate = DateOnly.FromDateTime(DateTime.UtcNow);
 
+        
             var activeCompetitions = await context.Competitions
                 .Where(c => c.StartDate <= currentDate && c.EndDate >= currentDate)
                 .ToListAsync();
 
-            if (activeCompetitions.Any())
+            foreach (var competition in activeCompetitions)
             {
-                _logger.LogInformation($"Found active competitions: {activeCompetitions.Count}.");
+                await UpdateCompetitionRanksAsync(context, competition.Id);
             }
-            else
-            {
-                _logger.LogInformation("No active competitions found.");
-            }
+
+
             var endedCompetitions = await context.Competitions
                 .Where(c => c.EndDate < currentDate)
                 .ToListAsync();
 
-            bool finalizedAny = false;
             foreach (var competition in endedCompetitions)
             {
-                bool needsFinalization = await context.UsersResults
-                    .AnyAsync(ur => ur.CompetitionId == competition.Id && ur.Rank == 0);
-
-                if (needsFinalization)
-                {
-                    _logger.LogInformation($"Background service is finalizing competition ID: {competition.Id}.");
-                    await FinalizeCompetitionRewardsAsync(context, competition.Id);
-                    finalizedAny = true;
-                }
-            }
-
-            if (!finalizedAny && !endedCompetitions.Any())
-            {
-                _logger.LogInformation("No ended competitions found that require finalization.");
+         
+                await FinalizeEndedCompetitionAsync(context, competition.Id);
             }
         }
+        private async Task UpdateCompetitionRanksAsync(AppDbContext context, int competitionId)
+        {
+            var results = await context.UsersResults
+                .Where(ur => ur.CompetitionId == competitionId)
+                .OrderByDescending(ur => ur.Score)
+                .ToListAsync();
 
-        private async Task FinalizeCompetitionRewardsAsync(AppDbContext context, int competitionId)
+            int rank = 1;
+            foreach (var result in results)
+            {
+                result.Rank = rank;
+                context.UsersResults.Update(result);
+                rank++;
+            }
+
+            await context.SaveChangesAsync();
+        }
+        private async Task FinalizeEndedCompetitionAsync(AppDbContext context, int competitionId)
         {
             var results = await context.UsersResults
                 .Where(ur => ur.CompetitionId == competitionId)
@@ -100,15 +102,18 @@ namespace TransportApi.Services
             {
                 result.Rank = rank;
 
-                var matchedReward = rewards.ElementAtOrDefault(rank - 1);
-                
-                if (matchedReward != null && decimal.TryParse(matchedReward.Unit, out decimal rewardValue))
+                if (result.RewardAmount == 0)
                 {
-                    result.RewardAmount = int.Parse(rewardValue.ToString());
-                }
-                else
-                {
-                    result.RewardAmount = 0;
+                    var matchedReward = rewards.ElementAtOrDefault(rank - 1);
+                    
+                    if (matchedReward != null && decimal.TryParse(matchedReward.Unit, out decimal rewardValue))
+                    {
+                        result.RewardAmount = int.Parse(rewardValue.ToString());
+                    }
+                    else
+                    {
+                        result.RewardAmount = 0;
+                    }
                 }
 
                 context.UsersResults.Update(result);
@@ -116,7 +121,6 @@ namespace TransportApi.Services
             }
 
             await context.SaveChangesAsync();
-            _logger.LogInformation($"Finalized rewards for competition ID: {competitionId}. Total participants processed: {results.Count}.");
         }
     }
 }
