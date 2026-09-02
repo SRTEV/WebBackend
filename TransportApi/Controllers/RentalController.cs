@@ -135,9 +135,7 @@ namespace TransportApi.Controllers
             rental.Vehicle.VehicleStatusId = availableStatus.Id;
             _context.Vehicles.Update(rental.Vehicle);
 
-            // ==========================================
-            // КІНЕЦЬ ОРЕНДИ: ТІЛЬКИ БАЛИ ТА АКТИВНІ ЧЕЛЕНДЖІ
-            // ==========================================
+    
             var currentDate = DateOnly.FromDateTime(DateTime.UtcNow);
             var vehicleTypeId = rental.Vehicle.VehicleTypeId; 
             var userId = rental.UserId;

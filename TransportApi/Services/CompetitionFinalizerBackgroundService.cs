@@ -24,7 +24,7 @@ namespace TransportApi.Services
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation("Фоновий сервіс розрахунку рейтингів та челенджів запущено.");
+            _logger.LogInformation("Background service for competition finalization started.");
 
             while (!stoppingToken.IsCancellationRequested)
             {
@@ -34,7 +34,7 @@ namespace TransportApi.Services
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Помилка у фоновому сервісі розрахунку челенджів.");
+                    _logger.LogError(ex, "Error in the background service for competition finalization.");
                 }
 
                 await Task.Delay(_checkInterval, stoppingToken);
