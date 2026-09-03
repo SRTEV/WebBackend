@@ -50,57 +50,74 @@ namespace TransportApi.Controllers
 
             return CreatedAtAction(nameof(GetRental), new { id = rental.Id }, rental);
         }
+[HttpPost("start")]
+[Authorize]
+public async Task<ActionResult<Rental>> StartRental([FromBody] StartRentalDto dto)
+{
+    var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+    if (userIdClaim == null || !int.TryParse(userIdClaim, out int userId))
+    {
+        return Unauthorized(new { message = "Invalid token user ID." });
+    }
 
-        [HttpPost("start")]
-        [Authorize]
-        public async Task<ActionResult<Rental>> StartRental([FromBody] StartRentalDto dto)
-        {
-            var vehicle = await _context.Vehicles
-                .Include(v => v.VehicleStatus)
-                .FirstOrDefaultAsync(v => v.Id == dto.VehicleId);
+    var vehicle = await _context.Vehicles
+        .Include(v => v.VehicleStatus)
+        .FirstOrDefaultAsync(v => v.Id == dto.VehicleId);
 
-            if (vehicle == null)
-            {
-                return NotFound(new { message = "Vehicle not found." });
-            }
+    if (vehicle == null)
+    {
+        return NotFound(new { message = "Vehicle not found." });
+    }
 
-            if (vehicle.VehicleStatus?.Name == "Rented")
-            {
-                return BadRequest(new { message = "This vehicle is already in active rental." });
-            }
-            else if (vehicle.VehicleStatus?.Name != "Available")
-            {
-                return BadRequest(new { message = $"Vehicle is unavailable" });
-            }
-         
-            var rentedStatus = await _context.VehicleStatuses
-                .FirstOrDefaultAsync(s => s.Name == "Rented");
+    if (vehicle.VehicleStatus?.Name == "Rented")
+    {
+        return BadRequest(new { message = "This vehicle is already in active rental." });
+    }
+    else if (vehicle.VehicleStatus?.Name != "Available")
+    {
+        return BadRequest(new { message = $"Vehicle is unavailable" });
+    }
+ 
+    var rentedStatus = await _context.VehicleStatuses
+        .FirstOrDefaultAsync(s => s.Name == "Rented");
 
-            if (rentedStatus == null)
-            {
-                return StatusCode(500, new { message = "Status 'Rented' is not found in the database." });
-            }
+    if (rentedStatus == null)
+    {
+        return StatusCode(500, new { message = "Status 'Rented' is not found in the database." });
+    }
 
-            var rental = new Rental
-            {
-                VehicleId = dto.VehicleId,
-                RentalPlanId = dto.RentalPlanId,
-                UserId = dto.UserId,
-                StartTime = DateTime.UtcNow
-            };
+    // Шукаємо останню завершену оренду для цього самоката
+    var lastRental = await _context.Rentals
+        .Where(r => r.VehicleId == dto.VehicleId && r.EndTime != null)
+        .OrderByDescending(r => r.EndTime)
+        .AsNoTracking()
+        .FirstOrDefaultAsync();
 
-            _context.Rentals.Add(rental);
+    int lastDistanceEnd = lastRental?.DistanceEnd ?? 0;
 
-            vehicle.VehicleStatusId = rentedStatus.Id;
-            vehicle.ScanTime = DateTime.UtcNow;
-            _context.Vehicles.Update(vehicle);
-            
-            await _context.SaveChangesAsync();
+    // Створюємо новий об'єкт оренди (прив'язуємо тільки по ID, без навігаційних об'єктів)
+    var rental = new Rental
+    {
+        VehicleId = dto.VehicleId,
+        RentalPlanId = dto.RentalPlanId,
+        UserId = userId,
+        StartTime = DateTime.UtcNow,
+        DistanceStart = lastDistanceEnd
+    };
 
-            return CreatedAtAction(nameof(GetRental), new { id = rental.Id }, rental);
-        }
+    _context.Rentals.Add(rental);
 
-        // POST: api/Rental/end
+    // Оновлюємо статус самоката напряму
+    vehicle.VehicleStatusId = rentedStatus.Id;
+    vehicle.ScanTime = DateTime.UtcNow;
+    _context.Entry(vehicle).State = EntityState.Modified;
+
+    await _context.SaveChangesAsync();
+
+    return CreatedAtAction(nameof(GetRental), new { id = rental.Id }, rental);
+}
+
+       // POST: api/Rental/end
         [HttpPost("end")]
         [Authorize]
         public async Task<ActionResult<Rental>> EndRental([FromBody] EndRentalDto dto)
@@ -126,22 +143,47 @@ namespace TransportApi.Controllers
             {
                 return StatusCode(500, new { message = "Status 'Available' is not found in the database." });
             }
-           
+
+            // 1. Отримуємо всі точки маршруту, які самокат записав у Route_History для цієї оренди
+            var routePoints = await _context.RouteHistories
+                .Where(rh => rh.RentalId == rental.Id)
+                .OrderBy(rh => rh.RecordedAt)
+                .ToListAsync();
+
+            // 2. Рахуємо загальну дистанцію по сегментах у кілометрах
+            double totalDistanceKm = 0.0;
+            for (int i = 0; i < routePoints.Count - 1; i++)
+            {
+                var p1 = routePoints[i];
+                var p2 = routePoints[i + 1];
+                
+                totalDistanceKm += CalculateDistance((double)p1.PositionX, (double)p1.PositionY, (double)p2.PositionX, (double)p2.PositionY);
+            }
+
+            // 3. Конвертуємо кілометри у цілі метри (int)
+            int distanceMeters = (int)Math.Round(totalDistanceKm * 1000);
+
+            // Якщо Distance_Start у базі це int:
+            int distanceStart = rental.DistanceStart; 
+            int distanceEnd = distanceStart + distanceMeters;
+
+            // 4. Записуємо дані в оренду (усі показники — цілі метри int)
             rental.EndTime = DateTime.UtcNow;
-            rental.Distance = (decimal)dto.Distance; 
+            rental.Distance = distanceMeters;
+            rental.DistanceStart = distanceStart;
+            rental.DistanceEnd = distanceEnd; 
             
             _context.Rentals.Update(rental);
             
             rental.Vehicle.VehicleStatusId = availableStatus.Id;
             _context.Vehicles.Update(rental.Vehicle);
 
-    
+            // 5. Розрахунок балів для марафонів
             var currentDate = DateOnly.FromDateTime(DateTime.UtcNow);
             var vehicleTypeId = rental.Vehicle.VehicleTypeId; 
             var userId = rental.UserId;
 
-            // Конвертуємо кілометри у метри для цілочисельного Score
-            int distanceScore = (int)Math.Round(dto.Distance * 1000);
+            int distanceScore = distanceMeters; // Бали дорівнюють метрам
 
             var activeCompetitions = await _context.Competitions
                 .Where(c => c.VehicleTypeId == vehicleTypeId && c.StartDate <= currentDate && c.EndDate >= currentDate)
@@ -174,7 +216,6 @@ namespace TransportApi.Controllers
                     _context.UsersResults.Add(newUserResult);
                 }
             }
-            // ==========================================
 
             await _context.SaveChangesAsync();
 
@@ -201,6 +242,19 @@ namespace TransportApi.Controllers
             return Ok(rentals);
         }
 
+        private double CalculateDistance(double lat1, double lon1, double lat2, double lon2)
+{
+    var dLat = ToRadians(lat2 - lat1);
+    var dLon = ToRadians(lon2 - lon1);
+    var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
+            Math.Cos(ToRadians(lat1)) * Math.Cos(ToRadians(lat2)) *
+            Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
+    var c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+    return 6371.0 * c; 
+}
+
+private double ToRadians(double angle) => angle * Math.PI / 180.0;
+
         public class StartRentalDto
         {
             public int VehicleId { get; set; }
@@ -211,9 +265,7 @@ namespace TransportApi.Controllers
         public class EndRentalDto
         {
             public int RentalId { get; set; }
-            public double Distance { get; set; }
-            public decimal positionX { get; set; }
-            public decimal positionY { get; set; }
+      
         }
     }
 }
