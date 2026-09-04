@@ -10,8 +10,6 @@ namespace TransportApi.Services
     {
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<CompetitionFinalizerBackgroundService> _logger;
-        
-        // Інтервал перевірки та перерахунку рейтингів (наприклад, кожні 5 хвилин)
         private readonly TimeSpan _checkInterval = TimeSpan.FromMinutes(5);
 
         public CompetitionFinalizerBackgroundService(
@@ -48,27 +46,27 @@ namespace TransportApi.Services
 
             var currentDate = DateOnly.FromDateTime(DateTime.UtcNow);
 
-        
             var activeCompetitions = await context.Competitions
                 .Where(c => c.StartDate <= currentDate && c.EndDate >= currentDate)
+                .Select(c => c.Id)
                 .ToListAsync();
 
-            foreach (var competition in activeCompetitions)
+            foreach (var competitionId in activeCompetitions)
             {
-                await UpdateCompetitionRanksAsync(context, competition.Id);
+                await UpdateCompetitionRanksAsync(context, competitionId);
             }
-
 
             var endedCompetitions = await context.Competitions
                 .Where(c => c.EndDate < currentDate)
+                .Select(c => c.Id)
                 .ToListAsync();
 
-            foreach (var competition in endedCompetitions)
+            foreach (var competitionId in endedCompetitions)
             {
-         
-                await FinalizeEndedCompetitionAsync(context, competition.Id);
+                await FinalizeEndedCompetitionAsync(context, competitionId);
             }
         }
+
         private async Task UpdateCompetitionRanksAsync(AppDbContext context, int competitionId)
         {
             var results = await context.UsersResults
@@ -79,13 +77,20 @@ namespace TransportApi.Services
             int rank = 1;
             foreach (var result in results)
             {
-                result.Rank = rank;
-                context.UsersResults.Update(result);
+                if (result.Rank != rank)
+                {
+                    result.Rank = rank;
+                    context.UsersResults.Update(result);
+                }
                 rank++;
             }
 
-            await context.SaveChangesAsync();
+            if (results.Any())
+            {
+                await context.SaveChangesAsync();
+            }
         }
+
         private async Task FinalizeEndedCompetitionAsync(AppDbContext context, int competitionId)
         {
             var results = await context.UsersResults
@@ -95,6 +100,7 @@ namespace TransportApi.Services
 
             var rewards = await context.RewardTypes
                 .Where(rt => rt.CompetitionId == competitionId)
+                .OrderBy(rt => rt.Id)
                 .ToListAsync();
 
             int rank = 1;
@@ -102,13 +108,27 @@ namespace TransportApi.Services
             {
                 result.Rank = rank;
 
-                if (result.RewardAmount == 0)
+
+                if (result.RewardAmount == 0 && rewards.Count > 0)
                 {
-                    var matchedReward = rewards.ElementAtOrDefault(rank - 1);
-                    
-                    if (matchedReward != null && decimal.TryParse(matchedReward.Unit, out decimal rewardValue))
+                    RewardType? matchedReward = null;
+
+                    if (rank == 1)
                     {
-                        result.RewardAmount = int.Parse(rewardValue.ToString());
+                        matchedReward = rewards.ElementAtOrDefault(0);
+                    }
+                    else if (rank >= 2 && rank <= 4)
+                    {
+                        matchedReward = rewards.ElementAtOrDefault(1);
+                    }
+                    else if (rank == 5)
+                    {
+                        matchedReward = rewards.ElementAtOrDefault(2);
+                    }
+
+                    if (matchedReward != null && int.TryParse(matchedReward.Unit, out int rewardValue))
+                    {
+                        result.RewardAmount = rewardValue;
                     }
                     else
                     {
@@ -120,7 +140,11 @@ namespace TransportApi.Services
                 rank++;
             }
 
-            await context.SaveChangesAsync();
+            if (results.Any())
+            {
+                await context.SaveChangesAsync();
+                _logger.LogInformation($"Competition ID {competitionId} has been successfully finalized.");
+            }
         }
     }
 }

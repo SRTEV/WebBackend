@@ -77,8 +77,6 @@ namespace TransportApi.Controllers
         public async Task<IActionResult> GetLatestCompetition(int vehicleTypeId)
         {
             var currentDate = DateOnly.FromDateTime(DateTime.UtcNow);
-
-            // 1. Спочатку шукаємо активний челендж на сьогодні
             var competition = await _context.Competitions
                 .Include(c => c.VehicleType)
                 .Include(c => c.GoalTypes)
@@ -89,7 +87,6 @@ namespace TransportApi.Controllers
 
             bool isEnded = false;
 
-            // 2. Якщо активного нема, шукаємо останній завершений (який вже минув)
             if (competition == null)
             {
                 competition = await _context.Competitions
@@ -102,17 +99,15 @@ namespace TransportApi.Controllers
 
                 if (competition != null)
                 {
-                    isEnded = true; // Позначаємо, що челендж уже закінчився
+                    isEnded = true; 
                 }
             }
 
-            // 3. Якщо взагалі нічого немає для цього типу транспорту
+    
             if (competition == null)
             {
-                return NotFound(new { message = "Челенджів нема, пусто" });
+                return NotFound(new { message = "Challenge not found" });
             }
-
-            // Повертаємо результат із додатковим полем isEnded
             return Ok(new
             {
                 competition.Id,
@@ -186,14 +181,12 @@ public async Task<IActionResult> PostCompetition([FromBody] Competition competit
                 return NotFound();
             }
 
-            // Оновлюємо основні поля челенджу
             existingComp.StartDate = competition.StartDate;
             existingComp.EndDate = competition.EndDate;
             existingComp.Description = competition.Description;
             existingComp.GoalValue = competition.GoalValue;
             existingComp.VehicleTypeId = competition.VehicleTypeId;
 
-            // Перезаписуємо GoalTypes та RewardTypes
             _context.GoalTypes.RemoveRange(existingComp.GoalTypes);
             _context.RewardTypes.RemoveRange(existingComp.RewardTypes);
 
@@ -225,5 +218,61 @@ public async Task<IActionResult> PostCompetition([FromBody] Competition competit
             await _context.SaveChangesAsync();
             return NoContent();
         }
+
+
+[HttpGet("UserResult/{userId}/{competitionId}")]
+[Authorize]
+public async Task<IActionResult> GetUserResult(int userId, int competitionId)
+{
+    var userResult = await _context.UsersResults
+        .Where(ur => ur.UserId == userId && ur.CompetitionId == competitionId)
+        .Include(ur => ur.Competition)
+            .ThenInclude(c => c.RewardTypes)
+        .AsNoTracking()
+        .FirstOrDefaultAsync();
+
+    if (userResult == null)
+    {
+        return NotFound(new { message = "User result not found for this competition." });
     }
+
+    var rewards = userResult.Competition?.RewardTypes?.OrderBy(rt => rt.Id).ToList() ?? new List<RewardType>();
+
+    RewardType? matchedReward = null;
+    int rank = int.Parse(userResult.Rank.ToString());
+
+    if (rank == 1)
+    {
+        matchedReward = rewards.ElementAtOrDefault(0);
+    }
+    else if (rank >= 2 && rank <= 4)
+    {
+        matchedReward = rewards.ElementAtOrDefault(1);
+    }
+    else if (rank == 5)
+    {
+        matchedReward = rewards.ElementAtOrDefault(2);
+    }
+
+    var resultWithReward = new
+    {
+        userResult.Id,
+        userResult.UserId,
+        userResult.CompetitionId,
+        userResult.Score,
+        userResult.Rank,
+        userResult.RewardAmount,
+        RewardName = matchedReward?.Name ?? "No reward",
+        RewardUnit = matchedReward?.Unit ?? "0"
+    };
+
+    return Ok(resultWithReward);
 }
+
+
+    }
+
+    
+
+}
+
