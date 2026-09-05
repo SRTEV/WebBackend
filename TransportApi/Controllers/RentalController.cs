@@ -50,74 +50,87 @@ namespace TransportApi.Controllers
 
             return CreatedAtAction(nameof(GetRental), new { id = rental.Id }, rental);
         }
-[HttpPost("start")]
-[Authorize]
-public async Task<ActionResult<Rental>> StartRental([FromBody] StartRentalDto dto)
-{
-    var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-    if (userIdClaim == null || !int.TryParse(userIdClaim, out int userId))
-    {
-        return Unauthorized(new { message = "Invalid token user ID." });
-    }
 
-    var vehicle = await _context.Vehicles
-        .Include(v => v.VehicleStatus)
-        .FirstOrDefaultAsync(v => v.Id == dto.VehicleId);
+        [HttpPost("start")]
+        [Authorize]
+        public async Task<ActionResult<Rental>> StartRental([FromBody] StartRentalDto dto)
+        {
+            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (userIdClaim == null || !int.TryParse(userIdClaim, out int userId))
+            {
+                return Unauthorized(new { message = "Invalid token user ID." });
+            }
 
-    if (vehicle == null)
-    {
-        return NotFound(new { message = "Vehicle not found." });
-    }
+            // Перевірка боргу користувача
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null)
+            {
+                return NotFound(new { message = "User not found." });
+            }
 
-    if (vehicle.VehicleStatus?.Name == "Rented")
-    {
-        return BadRequest(new { message = "This vehicle is already in active rental." });
-    }
-    else if (vehicle.VehicleStatus?.Name != "Available")
-    {
-        return BadRequest(new { message = $"Vehicle is unavailable" });
-    }
- 
-    var rentedStatus = await _context.VehicleStatuses
-        .FirstOrDefaultAsync(s => s.Name == "Rented");
+            if (user.OustandingBalances > 20)
+            {
+                return BadRequest(new { message = "Rental denied. Your outstanding balance exceeds 20 PLN." });
+            }
 
-    if (rentedStatus == null)
-    {
-        return StatusCode(500, new { message = "Status 'Rented' is not found in the database." });
-    }
+            var vehicle = await _context.Vehicles
+                .Include(v => v.VehicleStatus)
+                .FirstOrDefaultAsync(v => v.Id == dto.VehicleId);
 
-    // Шукаємо останню завершену оренду для цього самоката
-    var lastRental = await _context.Rentals
-        .Where(r => r.VehicleId == dto.VehicleId && r.EndTime != null)
-        .OrderByDescending(r => r.EndTime)
-        .AsNoTracking()
-        .FirstOrDefaultAsync();
+            if (vehicle == null)
+            {
+                return NotFound(new { message = "Vehicle not found." });
+            }
 
-    int lastDistanceEnd = lastRental?.DistanceEnd ?? 0;
+            if (vehicle.VehicleStatus?.Name == "Rented")
+            {
+                return BadRequest(new { message = "This vehicle is already in active rental." });
+            }
+            else if (vehicle.VehicleStatus?.Name != "Available")
+            {
+                return BadRequest(new { message = $"Vehicle is unavailable" });
+            }
+         
+            var rentedStatus = await _context.VehicleStatuses
+                .FirstOrDefaultAsync(s => s.Name == "Rented");
 
-    // Створюємо новий об'єкт оренди (прив'язуємо тільки по ID, без навігаційних об'єктів)
-    var rental = new Rental
-    {
-        VehicleId = dto.VehicleId,
-        RentalPlanId = dto.RentalPlanId,
-        UserId = userId,
-        StartTime = DateTime.UtcNow,
-        DistanceStart = lastDistanceEnd
-    };
+            if (rentedStatus == null)
+            {
+                return StatusCode(500, new { message = "Status 'Rented' is not found in the database." });
+            }
 
-    _context.Rentals.Add(rental);
+            // Шукаємо останню завершену оренду для цього самоката
+            var lastRental = await _context.Rentals
+                .Where(r => r.VehicleId == dto.VehicleId && r.EndTime != null)
+                .OrderByDescending(r => r.EndTime)
+                .AsNoTracking()
+                .FirstOrDefaultAsync();
 
-    // Оновлюємо статус самоката напряму
-    vehicle.VehicleStatusId = rentedStatus.Id;
-    vehicle.ScanTime = DateTime.UtcNow;
-    _context.Entry(vehicle).State = EntityState.Modified;
+            int lastDistanceEnd = lastRental?.DistanceEnd ?? 0;
 
-    await _context.SaveChangesAsync();
+            // Створюємо новий об'єкт оренди
+            var rental = new Rental
+            {
+                VehicleId = dto.VehicleId,
+                RentalPlanId = dto.RentalPlanId,
+                UserId = userId,
+                StartTime = DateTime.UtcNow,
+                DistanceStart = lastDistanceEnd
+            };
 
-    return CreatedAtAction(nameof(GetRental), new { id = rental.Id }, rental);
-}
+            _context.Rentals.Add(rental);
 
-       // POST: api/Rental/end
+            // Оновлюємо статус самоката напряму
+            vehicle.VehicleStatusId = rentedStatus.Id;
+            vehicle.ScanTime = DateTime.UtcNow;
+            _context.Entry(vehicle).State = EntityState.Modified;
+
+            await _context.SaveChangesAsync();
+
+            return CreatedAtAction(nameof(GetRental), new { id = rental.Id }, rental);
+        }
+
+        // POST: api/Rental/end
         [HttpPost("end")]
         [Authorize]
         public async Task<ActionResult<Rental>> EndRental([FromBody] EndRentalDto dto)
@@ -163,11 +176,10 @@ public async Task<ActionResult<Rental>> StartRental([FromBody] StartRentalDto dt
             // 3. Конвертуємо кілометри у цілі метри (int)
             int distanceMeters = (int)Math.Round(totalDistanceKm * 1000);
 
-            // Якщо Distance_Start у базі це int:
             int distanceStart = rental.DistanceStart; 
             int distanceEnd = distanceStart + distanceMeters;
 
-            // 4. Записуємо дані в оренду (усі показники — цілі метри int)
+            // 4. Записуємо дані в оренду
             rental.EndTime = DateTime.UtcNow;
             rental.Distance = distanceMeters;
             rental.DistanceStart = distanceStart;
@@ -178,7 +190,7 @@ public async Task<ActionResult<Rental>> StartRental([FromBody] StartRentalDto dt
             rental.Vehicle.VehicleStatusId = availableStatus.Id;
             _context.Vehicles.Update(rental.Vehicle);
 
-            // 5. Розрахунок балів для марафонів
+            // 5. Розрахунок балів для марафонів та експедицій
             var currentDate = DateOnly.FromDateTime(DateTime.UtcNow);
             var vehicleTypeId = rental.Vehicle.VehicleTypeId; 
             var userId = rental.UserId;
@@ -193,27 +205,57 @@ public async Task<ActionResult<Rental>> StartRental([FromBody] StartRentalDto dt
             foreach (var competition in activeCompetitions)
             {
                 bool isMarathon = competition.GoalTypes.Any(gt => gt.Name == "Marathon");
-                if (!isMarathon) continue;
+                bool isExpedition = competition.GoalTypes.Any(gt => gt.Name == "Expedition");
+
+                if (!isMarathon && !isExpedition) continue;
 
                 var userResult = await _context.UsersResults
                     .FirstOrDefaultAsync(ur => ur.UserId == userId && ur.CompetitionId == competition.Id);
 
-                if (userResult != null)
+                if (isMarathon)
                 {
-                    userResult.Score += distanceScore;
-                    _context.UsersResults.Update(userResult);
-                }
-                else
-                {
-                    var newUserResult = new UsersResult
+                    // Логіка марафону: сумуємо дистанції
+                    if (userResult != null)
                     {
-                        UserId = userId,
-                        CompetitionId = competition.Id,
-                        Score = distanceScore,
-                        Rank = 0,
-                        RewardAmount = 0
-                    };
-                    _context.UsersResults.Add(newUserResult);
+                        userResult.Score += distanceScore;
+                        _context.UsersResults.Update(userResult);
+                    }
+                    else
+                    {
+                        var newUserResult = new UsersResult
+                        {
+                            UserId = userId,
+                            CompetitionId = competition.Id,
+                            Score = distanceScore,
+                            Rank = 0,
+                            RewardAmount = 0
+                        };
+                        _context.UsersResults.Add(newUserResult);
+                    }
+                }
+                else if (isExpedition)
+                {
+                    // Логіка Expedition: беремо найбільшу відстань за один проїзд (не сумуємо)
+                    if (userResult != null)
+                    {
+                        if (distanceScore > userResult.Score)
+                        {
+                            userResult.Score = distanceScore;
+                            _context.UsersResults.Update(userResult);
+                        }
+                    }
+                    else
+                    {
+                        var newUserResult = new UsersResult
+                        {
+                            UserId = userId,
+                            CompetitionId = competition.Id,
+                            Score = distanceScore,
+                            Rank = 0,
+                            RewardAmount = 0
+                        };
+                        _context.UsersResults.Add(newUserResult);
+                    }
                 }
             }
 
@@ -243,17 +285,17 @@ public async Task<ActionResult<Rental>> StartRental([FromBody] StartRentalDto dt
         }
 
         private double CalculateDistance(double lat1, double lon1, double lat2, double lon2)
-{
-    var dLat = ToRadians(lat2 - lat1);
-    var dLon = ToRadians(lon2 - lon1);
-    var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
-            Math.Cos(ToRadians(lat1)) * Math.Cos(ToRadians(lat2)) *
-            Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
-    var c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
-    return 6371.0 * c; 
-}
+        {
+            var dLat = ToRadians(lat2 - lat1);
+            var dLon = ToRadians(lon2 - lon1);
+            var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
+                    Math.Cos(ToRadians(lat1)) * Math.Cos(ToRadians(lat2)) *
+                    Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
+            var c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+            return 6371.0 * c; 
+        }
 
-private double ToRadians(double angle) => angle * Math.PI / 180.0;
+        private double ToRadians(double angle) => angle * Math.PI / 180.0;
 
         public class StartRentalDto
         {
@@ -265,7 +307,6 @@ private double ToRadians(double angle) => angle * Math.PI / 180.0;
         public class EndRentalDto
         {
             public int RentalId { get; set; }
-      
         }
     }
 }

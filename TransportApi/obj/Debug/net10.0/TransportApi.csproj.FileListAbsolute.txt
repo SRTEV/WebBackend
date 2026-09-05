@@ -537,3 +537,7 @@ D:\gowno\back\WebBackend\TransportApi\obj\Debug\net10.0\refint\TransportApi.dll
 D:\gowno\back\WebBackend\TransportApi\obj\Debug\net10.0\TransportApi.pdb
 D:\gowno\back\WebBackend\TransportApi\obj\Debug\net10.0\TransportApi.genruntimeconfig.cache
 D:\gowno\back\WebBackend\TransportApi\obj\Debug\net10.0\ref\TransportApi.dll
+D:\gowno\back\WebBackend\TransportApi\bin\Debug\net10.0\Newtonsoft.Json.dll
+D:\gowno\back\WebBackend\TransportApi\bin\Debug\net10.0\Stripe.net.dll
+D:\gowno\back\WebBackend\TransportApi\bin\Debug\net10.0\System.Configuration.ConfigurationManager.dll
+D:\gowno\back\WebBackend\TransportApi\bin\Debug\net10.0\System.Security.Cryptography.ProtectedData.dll

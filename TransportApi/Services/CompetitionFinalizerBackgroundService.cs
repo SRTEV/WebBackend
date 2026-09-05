@@ -93,6 +93,9 @@ namespace TransportApi.Services
 
         private async Task FinalizeEndedCompetitionAsync(AppDbContext context, int competitionId)
         {
+            // Очищаємо трекер, щоб уникнути конфліктів трекінгу та цикличної залежності в EF Core
+            context.ChangeTracker.Clear();
+
             var results = await context.UsersResults
                 .Where(ur => ur.CompetitionId == competitionId)
                 .OrderByDescending(ur => ur.Score)
@@ -103,13 +106,18 @@ namespace TransportApi.Services
                 .OrderBy(rt => rt.Id)
                 .ToListAsync();
 
+            bool changesMade = false;
             int rank = 1;
+
             foreach (var result in results)
             {
                 result.Rank = rank;
 
+                // Захист від повторного нарахування: якщо нагорода вже має PaymentId (тобто була використана) 
+                // або на балансі ще є кошти (RewardAmount > 0), ми її не чіпаємо.
+                bool isAlreadyProcessed = result.PaymentId != null || result.RewardAmount > 0;
 
-                if (result.RewardAmount == 0 && rewards.Count > 0)
+                if (!isAlreadyProcessed && rewards.Count > 0)
                 {
                     RewardType? matchedReward = null;
 
@@ -129,10 +137,7 @@ namespace TransportApi.Services
                     if (matchedReward != null && int.TryParse(matchedReward.Unit, out int rewardValue))
                     {
                         result.RewardAmount = rewardValue;
-                    }
-                    else
-                    {
-                        result.RewardAmount = 0;
+                        changesMade = true;
                     }
                 }
 
@@ -140,7 +145,7 @@ namespace TransportApi.Services
                 rank++;
             }
 
-            if (results.Any())
+            if (changesMade && results.Any())
             {
                 await context.SaveChangesAsync();
                 _logger.LogInformation($"Competition ID {competitionId} has been successfully finalized.");
