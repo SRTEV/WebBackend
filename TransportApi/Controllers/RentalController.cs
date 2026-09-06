@@ -68,9 +68,13 @@ namespace TransportApi.Controllers
                 return NotFound(new { message = "User not found." });
             }
 
-            if (user.OustandingBalances > 20)
+            if (user.OustandingBalances > 10)
             {
-                return BadRequest(new { message = "Rental denied. Your outstanding balance exceeds 20 PLN." });
+                return BadRequest(new { message = "Rental denied. Your outstanding balance exceeds 10 PLN." });
+            }
+            if(user.CardId == null)
+            {
+                return BadRequest(new { message = "Rental denied. You need to add a payment card before starting a rental." });
             }
 
             var vehicle = await _context.Vehicles
