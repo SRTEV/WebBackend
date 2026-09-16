@@ -168,15 +168,26 @@ namespace TransportApi.Controllers
                 .ToListAsync();
 
             // 2. Рахуємо загальну дистанцію по сегментах у кілометрах
-            double totalDistanceKm = 0.0;
-            for (int i = 0; i < routePoints.Count - 1; i++)
-            {
-                var p1 = routePoints[i];
-                var p2 = routePoints[i + 1];
-                
-                totalDistanceKm += CalculateDistance((double)p1.PositionX, (double)p1.PositionY, (double)p2.PositionX, (double)p2.PositionY);
-            }
+     // 2. Рахуємо загальну дистанцію по сегментах у кілометрах з фільтрацією шуму
+double totalDistanceKm = 0.0;
+for (int i = 0; i < routePoints.Count - 1; i++)
+{
+    var p1 = routePoints[i];
+    var p2 = routePoints[i + 1];
+    
+    // ПРАВИЛЬНО: Y — це широта (lat), X — це довжина (lon). Передаємо (Y, X).
+    double segmentDistance = CalculateDistance(
+        (double)p1.PositionY, (double)p1.PositionX, 
+        (double)p2.PositionY, (double)p2.PositionX
+    );
 
+    // ФІЛЬТР ШУМУ: Додаємо сегмент до загальної відстані, 
+    // тільки якщо переміщення було більше ніж на 5-10 метрів (> 0.005 км)
+    if (segmentDistance > 0.005)
+    {
+        totalDistanceKm += segmentDistance;
+    }
+}
             // 3. Конвертуємо кілометри у цілі метри (int)
             int distanceMeters = (int)Math.Round(totalDistanceKm * 1000);
 

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Stripe;
 using TransportApi.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace TransportApi.Controllers
 {
@@ -21,13 +22,13 @@ namespace TransportApi.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Payment>>> GetPayments()
+        public async Task<IActionResult> GetPayments()
         {
             return Ok(await _context.Payments.ToListAsync());
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<Payment>> GetPayment(int id)
+        public async Task<IActionResult> GetPayment(int id)
         {
             var payment = await _context.Payments.FindAsync(id);
             if (payment == null) return NotFound();
@@ -35,7 +36,7 @@ namespace TransportApi.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult<Payment>> PostPayment(Payment payment)
+        public async Task<IActionResult> PostPayment(Payment payment)
         {
             _context.Payments.Add(payment);
             await _context.SaveChangesAsync();
@@ -48,7 +49,6 @@ namespace TransportApi.Controllers
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                // 1. Отримуємо оренду разом із планом
                 var rental = await _context.Rentals
                     .Include(r => r.RentalPlan) 
                     .FirstOrDefaultAsync(r => r.Id == rentalId);
@@ -61,14 +61,12 @@ namespace TransportApi.Controllers
 
                 if (user == null) return NotFound(new { message = "User not found." });
 
-                // Беремо Stripe ID напряму з параметра (свіжий pm_...) або з бази як фоллбек
                 string stripePaymentMethodId = paymentMethodId;
                 if (string.IsNullOrEmpty(stripePaymentMethodId))
                 {
                     stripePaymentMethodId = user.Card?.CvvCode ?? "pm_card_visa";
                 }
 
-                // 2. Розрахунок суми на основі тарифу та часу
                 DateTime startTime = rental.StartTime;
                 DateTime endTime = DateTime.UtcNow;
                 
@@ -82,7 +80,6 @@ namespace TransportApi.Controllers
                 decimal amount = Math.Round(pricePerMinute * totalMinutes, 2);
                 decimal originalAmount = amount;
 
-                // 3. Шукаємо активну нагороду користувача і віднімаємо її
                 var userResult = await _context.UsersResults
                     .Where(ur => ur.UserId == userId && ur.RewardAmount > 0)
                     .FirstOrDefaultAsync();
@@ -139,7 +136,6 @@ namespace TransportApi.Controllers
                     }
                 }
 
-                // Захист від занадто малих сум (мінімум 2.00 PLN за вимогами Stripe)
                 if (amount > 0)
                 {
                     amount = Math.Max(2.00m, Math.Round(amount, 2));
@@ -147,7 +143,6 @@ namespace TransportApi.Controllers
                 
                 string paymentStatus = "Completed";
 
-                // 4. Обробка платежу через Stripe
                 if (amount > 0)
                 {
                     try
@@ -188,9 +183,6 @@ namespace TransportApi.Controllers
                         paymentStatus = "Failed";
                         Console.WriteLine($"=== STRIPE ERROR ===");
                         Console.WriteLine($"Message: {ex.Message}");
-                        Console.WriteLine($"Stripe Error Code: {ex.StripeError?.Code}");
-                        Console.WriteLine($"Decline Code: {ex.StripeError?.DeclineCode}");
-                        Console.WriteLine($"Parameter: {ex.StripeError?.Param}");
                     }
                 }
                 else
@@ -198,7 +190,6 @@ namespace TransportApi.Controllers
                     paymentStatus = "Completed via Reward";
                 }
 
-                // 5. Створюємо запис про платіж
                 var payment = new Payment
                 {
                     RentalId = rentalId,
@@ -216,7 +207,6 @@ namespace TransportApi.Controllers
                     _context.UsersResults.Update(userResult);
                 }
 
-                // 6. Фіксація статусу та можливого боргу
                 if (paymentStatus == "Failed")
                 {
                     user.OustandingBalances += originalAmount;
@@ -238,12 +228,90 @@ namespace TransportApi.Controllers
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
-                return Ok(new { message = $" Payment processed successfully. Final amount: {amount} PLN.", finalAmount = amount, paymentId = payment.Id });
+                return Ok(new { message = $"Payment processed successfully. Final amount: {amount} PLN.", finalAmount = amount, paymentId = payment.Id });
             }
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
                 return StatusCode(500, new { message = "Internal server error during payment.", error = ex.Message });
+            }
+        }
+
+        [HttpPost("OutstandingBalance/{userId}")]
+        [Authorize]
+        public async Task<IActionResult> PayOutstandingBalance(int userId, [FromQuery] string? paymentMethodId = null)
+        {
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var user = await _context.Users
+                    .Include(u => u.Card)
+                    .FirstOrDefaultAsync(u => u.Id == userId);
+
+                if (user == null) return NotFound(new { message = "User not found." });
+
+                decimal outstandingAmount = user.OustandingBalances;
+
+                if (outstandingAmount <= 0)
+                {
+                    return BadRequest(new { message = "No outstanding balance to pay." });
+                }
+
+                // Використовуємо ID з пам'яті фронтенда або фоллбек із бази/тестовий варіант
+                string stripePaymentMethodId = paymentMethodId;
+                if (string.IsNullOrEmpty(stripePaymentMethodId) || !stripePaymentMethodId.StartsWith("pm_"))
+                {
+                    stripePaymentMethodId = user.Card?.CvvCode?.StartsWith("pm_") == true ? user.Card.CvvCode : "pm_card_visa";
+                }
+
+                decimal amountToCharge = Math.Max(2.00m, Math.Round(outstandingAmount, 2));
+                long amountInCents = (long)(amountToCharge * 100);
+
+                var options = new PaymentIntentCreateOptions
+                {
+                    Amount = amountInCents,
+                    Currency = "pln",
+                    PaymentMethod = stripePaymentMethodId,
+                    Confirm = true,
+                    AutomaticPaymentMethods = new PaymentIntentAutomaticPaymentMethodsOptions
+                    {
+                        Enabled = true,
+                        AllowRedirects = "never"
+                    }
+                };
+
+                var service = new PaymentIntentService();
+                var paymentIntent = await service.CreateAsync(options);
+
+                if (paymentIntent.Status == "succeeded")
+                {
+                    user.OustandingBalances = 0;
+                    _context.Users.Update(user);
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+                    
+                    return Ok(new { message = $"Outstanding balance of {outstandingAmount} PLN paid successfully.", finalAmountPaid = outstandingAmount });
+                }
+                else if (paymentIntent.Status == "requires_action" || paymentIntent.Status == "processing")
+                {
+                    await transaction.CommitAsync();
+                    return Accepted(new { message = "Payment requires further action.", calculatedAmount = outstandingAmount });
+                }
+                else
+                {
+                    await transaction.CommitAsync();
+                    return BadRequest(new { message = "Payment failed or card declined.", calculatedAmount = outstandingAmount });
+                }
+            }
+            catch (StripeException ex)
+            {
+                await transaction.RollbackAsync();
+                return StatusCode(400, new { message = "Stripe error during payment.", error = ex.Message, stripeErrorCode = ex.StripeError?.Code });
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                return StatusCode(500, new { message = "Internal server error.", error = ex.Message });
             }
         }
     }
