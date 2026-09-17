@@ -43,199 +43,200 @@ namespace TransportApi.Controllers
             return CreatedAtAction(nameof(GetPayment), new { id = payment.Id }, payment);
         }
 
-        [HttpPost("pay/{rentalId}/{userId}")]
-        public async Task<IActionResult> Pay(int rentalId, int userId, [FromQuery] string? paymentMethodId = null)
-        {
-            using var transaction = await _context.Database.BeginTransactionAsync();
-            try
+            [HttpPost("pay/{rentalId}/{userId}")]
+            public async Task<IActionResult> Pay(int rentalId, int userId, [FromQuery] string? paymentMethodId = null)
             {
-                var rental = await _context.Rentals
-                    .Include(r => r.RentalPlan) 
-                    .FirstOrDefaultAsync(r => r.Id == rentalId);
-
-                if (rental == null) return NotFound(new { message = "Rental not found." });
-
-                var user = await _context.Users
-                    .Include(u => u.Card)
-                    .FirstOrDefaultAsync(u => u.Id == userId);
-
-                if (user == null) return NotFound(new { message = "User not found." });
-
-                string stripePaymentMethodId = paymentMethodId;
-                if (string.IsNullOrEmpty(stripePaymentMethodId))
+                using var transaction = await _context.Database.BeginTransactionAsync();
+                try
                 {
-                    stripePaymentMethodId = user.Card?.CvvCode ?? "pm_card_visa";
-                }
+                    var rental = await _context.Rentals
+                        .Include(r => r.RentalPlan) 
+                        .FirstOrDefaultAsync(r => r.Id == rentalId);
 
-                DateTime startTime = rental.StartTime;
-                DateTime endTime = DateTime.UtcNow;
-                
-                decimal totalMinutes = (decimal)(endTime - startTime).TotalMinutes;
-                if (totalMinutes < 1) totalMinutes = 1;
+                    if (rental == null) return NotFound(new { message = "Rental not found." });
 
-                decimal planPrice = rental.RentalPlan?.Price ?? 10.0m; 
-                decimal planTimeMinutes = rental.RentalPlan?.Time ?? 30.0m;
+                    var user = await _context.Users
+                        .Include(u => u.Card)
+                        .FirstOrDefaultAsync(u => u.Id == userId);
 
-                decimal pricePerMinute = planPrice / planTimeMinutes;
-                decimal amount = Math.Round(pricePerMinute * totalMinutes, 2);
-                decimal originalAmount = amount;
+                    if (user == null) return NotFound(new { message = "User not found." });
 
-                var userResult = await _context.UsersResults
-                    .Where(ur => ur.UserId == userId && ur.RewardAmount > 0)
-                    .FirstOrDefaultAsync();
-
-                if (userResult != null && userResult.Rank.HasValue)
-                {
-                    var rewards = await _context.RewardTypes
-                        .Where(rt => rt.CompetitionId == userResult.CompetitionId)
-                        .OrderBy(rt => rt.Id)
-                        .ToListAsync();
-
-                    RewardType? matchedReward = null;
-                    int rank = userResult.Rank.Value;
-
-                    if (rank == 1) matchedReward = rewards.ElementAtOrDefault(0);
-                    else if (rank >= 2 && rank <= 4) matchedReward = rewards.ElementAtOrDefault(1);
-                    else if (rank >= 5) matchedReward = rewards.ElementAtOrDefault(2);
-
-                    if (matchedReward != null)
+                    string stripePaymentMethodId = paymentMethodId;
+                    if (string.IsNullOrEmpty(stripePaymentMethodId))
                     {
-                        string rewardName = matchedReward.Name?.ToLower().Trim() ?? string.Empty;
+                        stripePaymentMethodId = user.Card?.CvvCode ?? "pm_card_visa";
+                    }
 
-                        if (rewardName.Contains("free km"))
+                    DateTime startTime = rental.StartTime;
+                    DateTime endTime = DateTime.UtcNow;
+                    
+                    decimal totalMinutes = (decimal)(endTime - startTime).TotalMinutes;
+                    if (totalMinutes < 1) totalMinutes = 1;
+
+                    decimal planPrice = rental.RentalPlan?.Price ?? 10.0m; 
+                    decimal planTimeMinutes = rental.RentalPlan?.Time ?? 30.0m;
+
+                    decimal pricePerMinute = planPrice / planTimeMinutes;
+                    decimal amount = Math.Round(pricePerMinute * totalMinutes, 2);
+                    decimal originalAmount = amount;
+
+                    var userResult = await _context.UsersResults
+                        .Where(ur => ur.UserId == userId && ur.RewardAmount > 0)
+                        .FirstOrDefaultAsync();
+
+                    if (userResult != null && userResult.Rank.HasValue)
+                    {
+                        var rewards = await _context.RewardTypes
+                            .Where(rt => rt.CompetitionId == userResult.CompetitionId)
+                            .OrderBy(rt => rt.Id)
+                            .ToListAsync();
+
+                        RewardType? matchedReward = null;
+                        int rank = userResult.Rank.Value;
+
+                        if (rank == 1) matchedReward = rewards.ElementAtOrDefault(0);
+                        else if (rank >= 2 && rank <= 4) matchedReward = rewards.ElementAtOrDefault(1);
+                        else if (rank >= 5) matchedReward = rewards.ElementAtOrDefault(2);
+
+                        if (matchedReward != null)
                         {
-                            decimal freeKmAvailable = userResult.RewardAmount;
-                            if (amount <= freeKmAvailable)
+                            string rewardName = matchedReward.Name?.ToLower().Trim() ?? string.Empty;
+
+                            if (rewardName.Contains("free km"))
                             {
-                                userResult.RewardAmount -= (int)amount;
-                                amount = 0;
+                                decimal freeKmAvailable = userResult.RewardAmount;
+                                if (amount <= freeKmAvailable)
+                                {
+                                    userResult.RewardAmount -= (int)amount;
+                                    amount = 0;
+                                }
+                                else
+                                {
+                                    amount -= freeKmAvailable;
+                                    userResult.RewardAmount = 0;
+                                }
+                            }
+                            else if (rewardName.Contains("discount"))
+                            {
+                                decimal discountPercent = userResult.RewardAmount;
+                                amount = amount - (amount * discountPercent / 100);
+                                userResult.RewardAmount = 0;
+                            }
+                            else if (rewardName.Contains("free ride"))
+                            {
+                                if (int.TryParse(matchedReward.Unit, out int rewardPlanId) && rental.RentalPlanId == rewardPlanId)
+                                {
+                                    decimal tariffCoveredAmount = userResult.RewardAmount; 
+                                    amount = amount <= tariffCoveredAmount ? 0 : amount - tariffCoveredAmount;
+                                    userResult.RewardAmount = 0;
+                                }
+                            }
+
+                            _context.UsersResults.Update(userResult);
+                        }
+                    }
+
+                    if (amount > 0)
+                    {
+                        amount = Math.Max(2.00m, Math.Round(amount, 2));
+                    }
+                    
+                    string paymentStatus = "Completed";
+
+                    if (amount > 0)
+                    {
+                        try
+                        {
+                            long amountInCents = (long)(amount * 100);
+
+                            var options = new PaymentIntentCreateOptions
+                            {
+                                Amount = amountInCents,
+                                Currency = "pln",
+                                PaymentMethod = stripePaymentMethodId, 
+                                Confirm = true,
+                                AutomaticPaymentMethods = new PaymentIntentAutomaticPaymentMethodsOptions
+                                {
+                                    Enabled = true,
+                                    AllowRedirects = "never"
+                                }
+                            };
+
+                            var service = new PaymentIntentService();
+                            var paymentIntent = await service.CreateAsync(options);
+
+                            if (paymentIntent.Status == "succeeded")
+                            {
+                                paymentStatus = "Completed";
+                            }
+                            else if (paymentIntent.Status == "requires_action" || paymentIntent.Status == "processing")
+                            {
+                                paymentStatus = "Processing";
                             }
                             else
                             {
-                                amount -= freeKmAvailable;
-                                userResult.RewardAmount = 0;
+                                paymentStatus = "Failed";
                             }
                         }
-                        else if (rewardName.Contains("discount"))
-                        {
-                            decimal discountPercent = userResult.RewardAmount;
-                            amount = amount - (amount * discountPercent / 100);
-                            userResult.RewardAmount = 0;
-                        }
-                        else if (rewardName.Contains("free ride"))
-                        {
-                            if (int.TryParse(matchedReward.Unit, out int rewardPlanId) && rental.RentalPlanId == rewardPlanId)
-                            {
-                                decimal tariffCoveredAmount = userResult.RewardAmount; 
-                                amount = amount <= tariffCoveredAmount ? 0 : amount - tariffCoveredAmount;
-                                userResult.RewardAmount = 0;
-                            }
-                        }
-
-                        _context.UsersResults.Update(userResult);
-                    }
-                }
-
-                if (amount > 0)
-                {
-                    amount = Math.Max(2.00m, Math.Round(amount, 2));
-                }
-                
-                string paymentStatus = "Completed";
-
-                if (amount > 0)
-                {
-                    try
-                    {
-                        long amountInCents = (long)(amount * 100);
-
-                        var options = new PaymentIntentCreateOptions
-                        {
-                            Amount = amountInCents,
-                            Currency = "pln",
-                            PaymentMethod = stripePaymentMethodId, 
-                            Confirm = true,
-                            AutomaticPaymentMethods = new PaymentIntentAutomaticPaymentMethodsOptions
-                            {
-                                Enabled = true,
-                                AllowRedirects = "never"
-                            }
-                        };
-
-                        var service = new PaymentIntentService();
-                        var paymentIntent = await service.CreateAsync(options);
-
-                        if (paymentIntent.Status == "succeeded")
-                        {
-                            paymentStatus = "Completed";
-                        }
-                        else if (paymentIntent.Status == "requires_action" || paymentIntent.Status == "processing")
-                        {
-                            paymentStatus = "Processing";
-                        }
-                        else
+                        catch (StripeException ex)
                         {
                             paymentStatus = "Failed";
+                            Console.WriteLine($"=== STRIPE ERROR ===");
+                            Console.WriteLine($"Message: {ex.Message}");
                         }
                     }
-                    catch (StripeException ex)
+                    else
                     {
-                        paymentStatus = "Failed";
-                        Console.WriteLine($"=== STRIPE ERROR ===");
-                        Console.WriteLine($"Message: {ex.Message}");
+                        paymentStatus = "Completed via Reward";
                     }
-                }
-                else
-                {
-                    paymentStatus = "Completed via Reward";
-                }
 
-                var payment = new Payment
-                {
-                    RentalId = rentalId,
-                    Amount = amount,
-                    Status = paymentStatus,
-                    CreatedAt = DateTime.UtcNow
-                };
+                    var payment = new Payment
+                    {
+                        RentalId = rentalId,
+                        Amount = amount,
+                        Status = paymentStatus,
+                        CreatedAt = DateTime.UtcNow
+                    };
 
-                _context.Payments.Add(payment);
-                await _context.SaveChangesAsync(); 
+                    _context.Payments.Add(payment);
+                    await _context.SaveChangesAsync(); 
 
-                if (userResult != null)
-                {
-                    userResult.PaymentId = payment.Id;
-                    _context.UsersResults.Update(userResult);
-                }
+                    if (userResult != null)
+                    {
+                        userResult.PaymentId = payment.Id;
+                        _context.UsersResults.Update(userResult);
+                    }
 
-                if (paymentStatus == "Failed")
-                {
-                    user.OustandingBalances += originalAmount;
-                    _context.Users.Update(user);
-                    
+                    if (paymentStatus == "Failed")
+                    {
+                        user.OustandingBalances += originalAmount;
+                        _context.Users.Update(user);
+                        
+                        await _context.SaveChangesAsync();
+                        await transaction.CommitAsync();
+                        
+                        return BadRequest(new { message = "Payment failed or card declined. Added to outstanding balance.", paymentId = payment.Id, calculatedAmount = originalAmount });
+                    }
+                    else if (paymentStatus == "Processing")
+                    {
+                        await _context.SaveChangesAsync();
+                        await transaction.CommitAsync();
+                        
+                        return Accepted(new { message = "Payment requires further action.", paymentId = payment.Id, calculatedAmount = amount });
+                    }
+
                     await _context.SaveChangesAsync();
                     await transaction.CommitAsync();
-                    
-                    return BadRequest(new { message = "Payment failed or card declined. Added to outstanding balance.", paymentId = payment.Id, calculatedAmount = originalAmount });
+
+                    return Ok(new { message = $"Payment processed successfully. Final amount: {amount} PLN.", finalAmount = amount, paymentId = payment.Id });
                 }
-                else if (paymentStatus == "Processing")
+                
+                catch (Exception ex)
                 {
-                    await _context.SaveChangesAsync();
-                    await transaction.CommitAsync();
-                    
-                    return Accepted(new { message = "Payment requires further action.", paymentId = payment.Id, calculatedAmount = amount });
+                    await transaction.RollbackAsync();
+                    return StatusCode(500, new { message = "Internal server error during payment.", error = ex.Message });
                 }
-
-                await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
-
-                return Ok(new { message = $"Payment processed successfully. Final amount: {amount} PLN.", finalAmount = amount, paymentId = payment.Id });
             }
-            catch (Exception ex)
-            {
-                await transaction.RollbackAsync();
-                return StatusCode(500, new { message = "Internal server error during payment.", error = ex.Message });
-            }
-        }
 
         [HttpPost("OutstandingBalance/{userId}")]
         [Authorize]

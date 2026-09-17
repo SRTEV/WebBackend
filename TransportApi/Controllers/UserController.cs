@@ -143,10 +143,10 @@ namespace TransportApi.Controllers
         }
 
         // POST: api/User/login/app
-        [HttpPost("login/app")]
+       [HttpPost("login/app")]
         public async Task<IActionResult> LoginApp([FromBody] LoginRequest request)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+            var user = await _context.Users.Include(u => u.Role).FirstOrDefaultAsync(u => u.Email == request.Email);
             bool isPasswordValid = user != null && BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash);
             
             if (user == null || !isPasswordValid)
@@ -169,7 +169,8 @@ namespace TransportApi.Controllers
 
             var claims = new[] { 
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Email, user.Email)
+                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Role, user.Role?.RoleName ?? "User")
             };
             
             var token = new JwtSecurityToken(
@@ -185,12 +186,12 @@ namespace TransportApi.Controllers
                 message = "Login successful",
                 id = user.Id,
                 email = user.Email,
+                role = user.Role?.RoleName,
                 token = new JwtSecurityTokenHandler().WriteToken(token)
             });
         }
 
-        // POST: api/User/register/app
-        [HttpPost("register/app")]
+    [HttpPost("register/app")]
         public async Task<IActionResult> RegisterApp([FromBody] RegisterRequest request)
         {
             var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
@@ -226,7 +227,8 @@ namespace TransportApi.Controllers
 
             var claims = new[] { 
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Email, user.Email) 
+                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Role, "User") 
             };
 
             var token = new JwtSecurityToken(
@@ -244,6 +246,7 @@ namespace TransportApi.Controllers
                 message = "User registered successfully",
                 id = user.Id,
                 email = user.Email,
+                role = "User",
                 token = tokenString
             });
         }
