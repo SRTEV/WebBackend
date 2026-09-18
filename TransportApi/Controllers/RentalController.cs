@@ -134,7 +134,7 @@ namespace TransportApi.Controllers
             return CreatedAtAction(nameof(GetRental), new { id = rental.Id }, rental);
         }
 
-        // POST: api/Rental/end
+  // POST: api/Rental/end
         [HttpPost("end")]
         [Authorize]
         public async Task<ActionResult<Rental>> EndRental([FromBody] EndRentalDto dto)
@@ -167,27 +167,27 @@ namespace TransportApi.Controllers
                 .OrderBy(rh => rh.RecordedAt)
                 .ToListAsync();
 
-            // 2. Рахуємо загальну дистанцію по сегментах у кілометрах
-     // 2. Рахуємо загальну дистанцію по сегментах у кілометрах з фільтрацією шуму
-double totalDistanceKm = 0.0;
-for (int i = 0; i < routePoints.Count - 1; i++)
-{
-    var p1 = routePoints[i];
-    var p2 = routePoints[i + 1];
-    
-    // ПРАВИЛЬНО: Y — це широта (lat), X — це довжина (lon). Передаємо (Y, X).
-    double segmentDistance = CalculateDistance(
-        (double)p1.PositionY, (double)p1.PositionX, 
-        (double)p2.PositionY, (double)p2.PositionX
-    );
+            // 2. Рахуємо загальну дистанцію по сегментах у кілометрах з фільтрацією шуму
+            double totalDistanceKm = 0.0;
+            for (int i = 0; i < routePoints.Count - 1; i++)
+            {
+                var p1 = routePoints[i];
+                var p2 = routePoints[i + 1];
+                
+                // ПРАВИЛЬНО: Y — це широта (lat), X — це довжина (lon). Передаємо (Y, X).
+                double segmentDistance = CalculateDistance(
+                    (double)p1.PositionY, (double)p1.PositionX, 
+                    (double)p2.PositionY, (double)p2.PositionX
+                );
 
-    // ФІЛЬТР ШУМУ: Додаємо сегмент до загальної відстані, 
-    // тільки якщо переміщення було більше ніж на 5-10 метрів (> 0.005 км)
-    if (segmentDistance > 0.005)
-    {
-        totalDistanceKm += segmentDistance;
-    }
-}
+                // ФІЛЬТР ШУМУ: Додаємо сегмент до загальної відстані, 
+                // тільки якщо переміщення було більше ніж на 5-10 метрів (> 0.005 км)
+                if (segmentDistance > 0.005)
+                {
+                    totalDistanceKm += segmentDistance;
+                }
+            }
+
             // 3. Конвертуємо кілометри у цілі метри (int)
             int distanceMeters = (int)Math.Round(totalDistanceKm * 1000);
 
@@ -202,7 +202,19 @@ for (int i = 0; i < routePoints.Count - 1; i++)
             
             _context.Rentals.Update(rental);
             
+            // Змінюємо статус транспортного засобу на Available
             rental.Vehicle.VehicleStatusId = availableStatus.Id;
+
+            // ОНОВЛЕННЯ КООРДИНАТ ТРАНСПОРТУ:
+            // Беремо останню точку з маршруту, якщо вона наявна
+            var lastPoint = routePoints.LastOrDefault();
+            if (lastPoint != null)
+            {
+                rental.Vehicle.PositionX = lastPoint.PositionX;
+                rental.Vehicle.PositionY = lastPoint.PositionY;
+            }
+            // Якщо записів у RouteHistory немає, транспорт залишається на старих координатах (вважаємо, що стояв на місці)
+
             _context.Vehicles.Update(rental.Vehicle);
 
             // 5. Розрахунок балів для марафонів та експедицій
@@ -278,7 +290,6 @@ for (int i = 0; i < routePoints.Count - 1; i++)
 
             return Ok(rental);
         }
-
         // GET: api/Rental/History/{userId}
         [HttpGet("History/{userId}")]
         [Authorize]
