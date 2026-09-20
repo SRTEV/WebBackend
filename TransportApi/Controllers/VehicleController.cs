@@ -128,6 +128,60 @@ public async Task<ActionResult<Vehicle>> ScanVehicle(string QrCode)
     return Ok(vehicle);
 }
 
+[HttpPut("inremont/{vehicleId}")]
+[Authorize(Roles = "Repairman")]
+public async Task<ActionResult<Vehicle>> InRemont(int vehicleId)
+{
+    var vehicle = await _context.Vehicles
+        .FirstOrDefaultAsync(v => v.Id == vehicleId && (v.Deleted == null || v.Deleted == false));
+
+    if (vehicle == null)
+    {
+        return NotFound("Vehicle not found.");
+    }
+    if (vehicle.VehicleStatusId == 4)
+    {
+        return BadRequest("Vehicle is already in repair.");
+    }
+
+    if (vehicle.VehicleStatusId != 3)
+    {
+        return BadRequest("Vehicle don`t need repeir.");
+    }
+
+    vehicle.VehicleStatusId = 4;
+    vehicle.LastActivity = DateTime.UtcNow;
+
+    await _context.SaveChangesAsync();
+
+
+    return Ok("Vehicle status updated to 'In Repair'.   ");
+}
+[HttpPut("endremont/{vehicleId}")]
+[Authorize(Roles = "Repairman")]
+public async Task<ActionResult<Vehicle>> EndRemont(int vehicleId)
+{
+    var vehicle = await _context.Vehicles
+        .FirstOrDefaultAsync(v => v.Id == vehicleId && (v.Deleted == null || v.Deleted == false));
+
+    if (vehicle == null)
+    {
+        return NotFound("Vehicle not found.");
+    }
+    if (vehicle.VehicleStatusId != 4)
+    {
+        return BadRequest("Vehicle is not in repair.");
+    }
+
+    vehicle.VehicleStatusId = 1;
+    vehicle.LastActivity = DateTime.UtcNow;
+
+    await _context.SaveChangesAsync();
+
+
+
+    return Ok("Vehicle status updated to 'Available'.   ");
+}
         private bool VehicleExists(int id)
         {
             return _context.Vehicles.Any(e => e.Id == id && (e.Deleted == null || e.Deleted == false));

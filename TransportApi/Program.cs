@@ -61,6 +61,7 @@ builder.Services.AddHttpClient();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddHostedService<UserCleanupService>();
 builder.Services.AddHostedService<CompetitionFinalizerBackgroundService>();
+builder.Services.AddHostedService<VehicleStatusMonitorService>();
 var app = builder.Build();
 
 app.UseStaticFiles();

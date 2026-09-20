@@ -265,6 +265,7 @@ public async Task<IActionResult> PostCompetition([FromBody] Competition competit
                 userResult.Score,
                 userResult.Rank,
                 userResult.RewardAmount,
+                paymentId = userResult.PaymentId,
                 rewardName = matchedReward?.Name ?? "No reward",
                 rewardUnit = matchedReward?.Unit ?? "0",
                 challengeTypeName = userResult.Competition?.Description ?? "Challenge",

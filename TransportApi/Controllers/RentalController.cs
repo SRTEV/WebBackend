@@ -127,6 +127,7 @@ namespace TransportApi.Controllers
             // Оновлюємо статус самоката напряму
             vehicle.VehicleStatusId = rentedStatus.Id;
             vehicle.ScanTime = DateTime.UtcNow;
+            vehicle.LastActivity = DateTime.UtcNow;
             _context.Entry(vehicle).State = EntityState.Modified;
 
             await _context.SaveChangesAsync();
@@ -134,7 +135,7 @@ namespace TransportApi.Controllers
             return CreatedAtAction(nameof(GetRental), new { id = rental.Id }, rental);
         }
 
-  // POST: api/Rental/end
+        // POST: api/Rental/end
         [HttpPost("end")]
         [Authorize]
         public async Task<ActionResult<Rental>> EndRental([FromBody] EndRentalDto dto)
@@ -174,14 +175,11 @@ namespace TransportApi.Controllers
                 var p1 = routePoints[i];
                 var p2 = routePoints[i + 1];
                 
-                // ПРАВИЛЬНО: Y — це широта (lat), X — це довжина (lon). Передаємо (Y, X).
                 double segmentDistance = CalculateDistance(
                     (double)p1.PositionY, (double)p1.PositionX, 
                     (double)p2.PositionY, (double)p2.PositionX
                 );
 
-                // ФІЛЬТР ШУМУ: Додаємо сегмент до загальної відстані, 
-                // тільки якщо переміщення було більше ніж на 5-10 метрів (> 0.005 км)
                 if (segmentDistance > 0.005)
                 {
                     totalDistanceKm += segmentDistance;
@@ -194,94 +192,97 @@ namespace TransportApi.Controllers
             int distanceStart = rental.DistanceStart; 
             int distanceEnd = distanceStart + distanceMeters;
 
-            // 4. Записуємо дані в оренду
+            // Записуємо дані в оренду
             rental.EndTime = DateTime.UtcNow;
             rental.Distance = distanceMeters;
             rental.DistanceStart = distanceStart;
             rental.DistanceEnd = distanceEnd; 
-            
-            _context.Rentals.Update(rental);
-            
-            // Змінюємо статус транспортного засобу на Available
-            rental.Vehicle.VehicleStatusId = availableStatus.Id;
 
-            // ОНОВЛЕННЯ КООРДИНАТ ТРАНСПОРТУ:
-            // Беремо останню точку з маршруту, якщо вона наявна
-            var lastPoint = routePoints.LastOrDefault();
-            if (lastPoint != null)
+            if (rental.Vehicle != null)
             {
-                rental.Vehicle.PositionX = lastPoint.PositionX;
-                rental.Vehicle.PositionY = lastPoint.PositionY;
+                rental.Vehicle.LastActivity = DateTime.UtcNow;
+                // Змінюємо статус транспортного засобу на Available
+                rental.Vehicle.VehicleStatusId = availableStatus.Id;
+
+                // ОНОВЛЕННЯ КООРДИНАТ ТРАНСПОРТУ:
+                var lastPoint = routePoints.LastOrDefault();
+                if (lastPoint != null)
+                {
+                    rental.Vehicle.PositionX = lastPoint.PositionX;
+                    rental.Vehicle.PositionY = lastPoint.PositionY;
+                }
+
+                _context.Vehicles.Update(rental.Vehicle);
             }
-            // Якщо записів у RouteHistory немає, транспорт залишається на старих координатах (вважаємо, що стояв на місці)
 
-            _context.Vehicles.Update(rental.Vehicle);
+            _context.Rentals.Update(rental);
 
-            // 5. Розрахунок балів для марафонів та експедицій
+            // 4. Розрахунок балів для марафонів та експедицій
             var currentDate = DateOnly.FromDateTime(DateTime.UtcNow);
-            var vehicleTypeId = rental.Vehicle.VehicleTypeId; 
-            var userId = rental.UserId;
+            var vehicleTypeId = rental.Vehicle?.VehicleTypeId; 
+            var currentUserId = rental.UserId;
 
             int distanceScore = distanceMeters; // Бали дорівнюють метрам
 
-            var activeCompetitions = await _context.Competitions
-                .Where(c => c.VehicleTypeId == vehicleTypeId && c.StartDate <= currentDate && c.EndDate >= currentDate)
-                .Include(c => c.GoalTypes)
-                .ToListAsync();
-
-            foreach (var competition in activeCompetitions)
+            if (vehicleTypeId != null)
             {
-                bool isMarathon = competition.GoalTypes.Any(gt => gt.Name == "Marathon");
-                bool isExpedition = competition.GoalTypes.Any(gt => gt.Name == "Expedition");
+                var activeCompetitions = await _context.Competitions
+                    .Where(c => c.VehicleTypeId == vehicleTypeId && c.StartDate <= currentDate && c.EndDate >= currentDate)
+                    .Include(c => c.GoalTypes)
+                    .ToListAsync();
 
-                if (!isMarathon && !isExpedition) continue;
-
-                var userResult = await _context.UsersResults
-                    .FirstOrDefaultAsync(ur => ur.UserId == userId && ur.CompetitionId == competition.Id);
-
-                if (isMarathon)
+                foreach (var competition in activeCompetitions)
                 {
-                    // Логіка марафону: сумуємо дистанції
-                    if (userResult != null)
+                    bool isMarathon = competition.GoalTypes.Any(gt => gt.Name == "Marathon");
+                    bool isExpedition = competition.GoalTypes.Any(gt => gt.Name == "Expedition");
+
+                    if (!isMarathon && !isExpedition) continue;
+
+                    var userResult = await _context.UsersResults
+                        .FirstOrDefaultAsync(ur => ur.UserId == currentUserId && ur.CompetitionId == competition.Id);
+
+                    if (isMarathon)
                     {
-                        userResult.Score += distanceScore;
-                        _context.UsersResults.Update(userResult);
-                    }
-                    else
-                    {
-                        var newUserResult = new UsersResult
+                        if (userResult != null)
                         {
-                            UserId = userId,
-                            CompetitionId = competition.Id,
-                            Score = distanceScore,
-                            Rank = 0,
-                            RewardAmount = 0
-                        };
-                        _context.UsersResults.Add(newUserResult);
-                    }
-                }
-                else if (isExpedition)
-                {
-                    // Логіка Expedition: беремо найбільшу відстань за один проїзд (не сумуємо)
-                    if (userResult != null)
-                    {
-                        if (distanceScore > userResult.Score)
-                        {
-                            userResult.Score = distanceScore;
+                            userResult.Score += distanceScore;
                             _context.UsersResults.Update(userResult);
                         }
-                    }
-                    else
-                    {
-                        var newUserResult = new UsersResult
+                        else
                         {
-                            UserId = userId,
-                            CompetitionId = competition.Id,
-                            Score = distanceScore,
-                            Rank = 0,
-                            RewardAmount = 0
-                        };
-                        _context.UsersResults.Add(newUserResult);
+                            var newUserResult = new UsersResult
+                            {
+                                UserId = currentUserId,
+                                CompetitionId = competition.Id,
+                                Score = distanceScore,
+                                Rank = 0,
+                                RewardAmount = 0
+                            };
+                            _context.UsersResults.Add(newUserResult);
+                        }
+                    }
+                    else if (isExpedition)
+                    {
+                        if (userResult != null)
+                        {
+                            if (distanceScore > userResult.Score)
+                            {
+                                userResult.Score = distanceScore;
+                                _context.UsersResults.Update(userResult);
+                            }
+                        }
+                        else
+                        {
+                            var newUserResult = new UsersResult
+                            {
+                                UserId = currentUserId,
+                                CompetitionId = competition.Id,
+                                Score = distanceScore,
+                                Rank = 0,
+                                RewardAmount = 0
+                            };
+                            _context.UsersResults.Add(newUserResult);
+                        }
                     }
                 }
             }
@@ -290,6 +291,7 @@ namespace TransportApi.Controllers
 
             return Ok(rental);
         }
+
         // GET: api/Rental/History/{userId}
         [HttpGet("History/{userId}")]
         [Authorize]
@@ -333,6 +335,7 @@ namespace TransportApi.Controllers
         public class EndRentalDto
         {
             public int RentalId { get; set; }
+            public int VehicleId { get; set; } 
         }
     }
 }
