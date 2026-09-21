@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TransportApi.Models;
 using TransportApi.Services;
+using Microsoft.AspNetCore.Authorization;
 
 namespace TransportApi.Controllers
 {
@@ -81,7 +82,23 @@ namespace TransportApi.Controllers
             report.Status = "NotReviewed";
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetReport), new { id = report.Id }, report);
+            return CreatedAtAction(nameof(GetReport), new { id = report.Id }, report);}
+
+[HttpGet("reportsCount")]
+        [Authorize(Roles = "Repairman")]
+        public async Task<ActionResult<int>> GetUserReportsCount()
+        {
+            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (userIdClaim == null) return Unauthorized();
+
+            int userId = int.Parse(userIdClaim);
+
+           
+            int count = await _context.Reports
+                .Where(r => r.UserId == userId && r.Type == "Repairman")
+                .CountAsync();
+
+            return Ok(count);
         }
     }
 }

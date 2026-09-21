@@ -15,8 +15,8 @@ namespace TransportApi.Services
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<VehicleStatusMonitorService> _logger;
         
-        // Інтервал перевірки встановлено на 1 хвилину
-        private readonly TimeSpan _checkInterval = TimeSpan.FromMinutes(1);
+     
+        private readonly TimeSpan _checkInterval = TimeSpan.FromMinutes(3);
 
         public VehicleStatusMonitorService(
             IServiceProvider serviceProvider, 
@@ -40,8 +40,6 @@ namespace TransportApi.Services
                 {
                     _logger.LogError(ex, "An error occurred while checking vehicle statuses.");
                 }
-
-                // Чекаємо перед наступною перевіркою (1 хвилину)
                 await Task.Delay(_checkInterval, stoppingToken);
             }
 
@@ -74,8 +72,6 @@ namespace TransportApi.Services
                     _logger.LogInformation(
                         "Vehicle ID {Id} marked as NeedCheck. Reason: Battery = {Battery}%, LastActivity = {Activity}",
                         vehicle.Id, vehicle.BatteryLevel, vehicle.LastActivity);
-
-                    // Змінюємо статус на NeedCheck (припускаємо, що ID 3 це NeedCheck)
                     vehicle.VehicleStatusId = 3; 
                 }
 
