@@ -68,9 +68,9 @@ namespace TransportApi.Controllers
                 return NotFound(new { message = "User not found." });
             }
 
-            if (user.OustandingBalances > 10)
+            if (user.OustandingBalances != 0)
             {
-                return BadRequest(new { message = "Rental denied. Your outstanding balance exceeds 10 PLN." });
+                return BadRequest(new { message = "Rental denied. Your outstanding balance exceeds" + user.OustandingBalances+ " PLN. Please pay it! " });
             }
             if(user.CardId == null)
             {
@@ -95,15 +95,6 @@ namespace TransportApi.Controllers
                 return BadRequest(new { message = $"Vehicle is unavailable" });
             }
          
-            var rentedStatus = await _context.VehicleStatuses
-                .FirstOrDefaultAsync(s => s.Name == "Rented");
-
-            if (rentedStatus == null)
-            {
-                return StatusCode(500, new { message = "Status 'Rented' is not found in the database." });
-            }
-
-            // Шукаємо останню завершену оренду для цього самоката
             var lastRental = await _context.Rentals
                 .Where(r => r.VehicleId == dto.VehicleId && r.EndTime != null)
                 .OrderByDescending(r => r.EndTime)
@@ -112,7 +103,6 @@ namespace TransportApi.Controllers
 
             int lastDistanceEnd = lastRental?.DistanceEnd ?? 0;
 
-            // Створюємо новий об'єкт оренди
             var rental = new Rental
             {
                 VehicleId = dto.VehicleId,
@@ -124,8 +114,7 @@ namespace TransportApi.Controllers
 
             _context.Rentals.Add(rental);
 
-            // Оновлюємо статус самоката напряму
-            vehicle.VehicleStatusId = rentedStatus.Id;
+            vehicle.VehicleStatusId = 2;
             vehicle.ScanTime = DateTime.UtcNow;
             vehicle.LastActivity = DateTime.UtcNow;
             _context.Entry(vehicle).State = EntityState.Modified;

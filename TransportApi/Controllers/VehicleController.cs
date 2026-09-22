@@ -128,6 +128,7 @@ public async Task<ActionResult<Vehicle>> ScanVehicle(string QrCode)
     return Ok(vehicle);
 }
 
+
 [HttpPut("inremont/{vehicleId}")]
 [Authorize(Roles = "Repairman")]
 public async Task<ActionResult<Vehicle>> InRemont(int vehicleId)
@@ -144,10 +145,7 @@ public async Task<ActionResult<Vehicle>> InRemont(int vehicleId)
         return BadRequest("Vehicle is already in repair.");
     }
 
-    if (vehicle.VehicleStatusId != 3)
-    {
-        return BadRequest("Vehicle don`t need repeir.");
-    }
+   
 
     vehicle.VehicleStatusId = 4;
     vehicle.LastActivity = DateTime.UtcNow;

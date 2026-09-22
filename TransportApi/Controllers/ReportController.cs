@@ -100,5 +100,18 @@ namespace TransportApi.Controllers
 
             return Ok(count);
         }
+
+[HttpGet("AdminCalls")]
+[Authorize(Roles = "Repairman")]
+public async Task<ActionResult<IEnumerable<Report>>> GetAdminReports()
+{
+    var reports = await _context.Reports
+        .Where(r => r.Type == "Admin Calls")
+        .OrderByDescending(r => r.CreatedAt)
+        .ToListAsync();
+
+    return Ok(reports);
+}
+
     }
 }
