@@ -175,7 +175,6 @@ namespace TransportApi.Controllers
                 }
             }
 
-            // 3. Конвертуємо кілометри у цілі метри (int)
             int distanceMeters = (int)Math.Round(totalDistanceKm * 1000);
 
             int distanceStart = rental.DistanceStart; 
@@ -186,6 +185,8 @@ namespace TransportApi.Controllers
             rental.Distance = distanceMeters;
             rental.DistanceStart = distanceStart;
             rental.DistanceEnd = distanceEnd; 
+
+            
 
             if (rental.Vehicle != null)
             {

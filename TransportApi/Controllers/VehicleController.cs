@@ -180,6 +180,44 @@ public async Task<ActionResult<Vehicle>> EndRemont(int vehicleId)
 
     return Ok("Vehicle status updated to 'Available'.   ");
 }
+
+
+
+     [HttpPost("telemetry")]
+public async Task<IActionResult> UpdateTelemetry([FromBody] TelemetryDto dto)
+{
+    var vehicle = await _context.Vehicles
+        .FirstOrDefaultAsync(v => v.QrCode == dto.QrCode && (v.Deleted == null || v.Deleted == false));
+    
+    if (vehicle == null) return NotFound("Vehicle not found");
+
+    vehicle.BatteryLevel = (sbyte)dto.Battery;
+    vehicle.PositionX = (decimal)dto.X;
+    vehicle.PositionY = (decimal)dto.Y;
+    vehicle.LastActivity = DateTime.UtcNow;
+
+    var activeRental = await _context.Rentals
+        .Where(r => r.VehicleId == vehicle.Id && r.EndTime == null)
+        .OrderByDescending(r => r.StartTime)
+        .FirstOrDefaultAsync();
+
+    _context.RouteHistories.Add(new RouteHistory
+    {
+        VehicleId = vehicle.Id,
+        PositionX = (decimal)dto.X,
+        PositionY = (decimal)dto.Y,
+        BatteryLevel = (sbyte)dto.Battery,
+        Speed = (decimal)dto.Speed,
+        RentalId = activeRental?.Id, 
+        RecordedAt = DateTime.UtcNow
+    });
+
+    await _context.SaveChangesAsync();
+    return Ok(new { message = "Telemetry updated successfully" });
+}
+
+
+
         private bool VehicleExists(int id)
         {
             return _context.Vehicles.Any(e => e.Id == id && (e.Deleted == null || e.Deleted == false));
