@@ -142,54 +142,60 @@ namespace TransportApi.Controllers
             return Ok(new { message = "User unblocked successfully" });
         }
 
-        // POST: api/User/login/app
-       [HttpPost("login/app")]
-        public async Task<IActionResult> LoginApp([FromBody] LoginRequest request)
-        {
-            var user = await _context.Users.Include(u => u.Role).FirstOrDefaultAsync(u => u.Email == request.Email);
-            bool isPasswordValid = user != null && BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash);
-            
-            if (user == null || !isPasswordValid)
-            {
-                return Unauthorized(new { message = "Invalid email or password" });
-            }
-            if (user.Deleted == true)
-            {
-                return Unauthorized(new { message = "User is deleted" });
-            }
+       // POST: api/User/login
+[HttpPost("login")]
+public async Task<IActionResult> Login([FromBody] LoginRequest request)
+{
+    var user = await _context.Users.Include(u => u.Role).FirstOrDefaultAsync(u => u.Email == request.Email);
+    bool isPasswordValid = user != null && BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash);
 
-            var secretKey = _configuration["Jwt:Key"]; 
-            if (string.IsNullOrEmpty(secretKey))
-            {
-                return StatusCode(500, new { message = "JWT Secret Key is not configured on the server." });
-            }
+    if (user == null || !isPasswordValid)
+    {
+        return Unauthorized(new { message = "Invalid email or password" });
+    }
+    
+    if (user.Deleted == true)
+    {
+        return Unauthorized(new { message = "This user account is deleted." });
+    }
 
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+    var secretKey = _configuration["Jwt:Key"];
+    if (string.IsNullOrEmpty(secretKey))
+    {
+        return StatusCode(500, new { message = "JWT Secret Key is not configured on the server." });
+    }
 
-            var claims = new[] { 
-                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Email, user.Email),
-                new Claim(ClaimTypes.Role, user.Role?.RoleName ?? "User")
-            };
-            
-            var token = new JwtSecurityToken(
-                issuer: _configuration["Jwt:Issuer"],
-                audience: _configuration["Jwt:Audience"],
-                claims: claims,
-                expires: DateTime.Now.AddDays(7),
-                signingCredentials: creds
-            );
+    var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
+    var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-            return Ok(new
-            {
-                message = "Login successful",
-                id = user.Id,
-                email = user.Email,
-                role = user.Role?.RoleName,
-                token = new JwtSecurityTokenHandler().WriteToken(token)
-            });
-        }
+    var claims = new[]
+    {
+        new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+        new Claim(ClaimTypes.Email, user.Email),
+        new Claim(ClaimTypes.Role, user.Role?.RoleName ?? "User") 
+    };
+
+    var token = new JwtSecurityToken(
+        issuer: _configuration["Jwt:Issuer"],
+        audience: _configuration["Jwt:Audience"],
+        claims: claims,
+        expires: DateTime.Now.AddDays(5), 
+        signingCredentials: creds
+    );
+
+    var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
+
+    return Ok(new
+    {
+        message = "Login successful",
+        token = tokenString,
+        id = user.Id,
+        userId = user.Id, 
+        name = user.Name,
+        email = user.Email,
+        role = user.Role?.RoleName
+    });
+}
 
     [HttpPost("register/app")]
         public async Task<IActionResult> RegisterApp([FromBody] RegisterRequest request)
@@ -251,56 +257,7 @@ namespace TransportApi.Controllers
             });
         }
 
-        // POST: api/User/login
-        [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] LoginRequest request)
-        {
-            var user = await _context.Users.Include(u => u.Role).FirstOrDefaultAsync(u => u.Email == request.Email);
-            bool isPasswordValid = user != null && BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash);
 
-            if (user == null || !isPasswordValid)
-            {
-                return Unauthorized(new { message = "Invalid email or password" });
-            }
-            if (user.Deleted == true)
-            {
-                return Unauthorized(new { message = "This user account is deleted." });
-            }
-
-            var secretKey = _configuration["Jwt:Key"];
-            if (string.IsNullOrEmpty(secretKey))
-            {
-                return StatusCode(500, new { message = "JWT Secret Key is not configured on the server." });
-            }
-
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-        
-            var claims = new[]
-            {
-                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Email, user.Email),
-                new Claim(ClaimTypes.Role, user.Role?.RoleName ?? "User") 
-            };
-
-            var token = new JwtSecurityToken(
-                issuer: _configuration["Jwt:Issuer"],
-                audience: _configuration["Jwt:Audience"],
-                claims: claims,
-                expires: DateTime.Now.AddDays(1),
-                signingCredentials: creds
-            );
-
-            var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
-
-            return Ok(new
-            {
-                message = "Login successful",
-                token = tokenString, 
-                userId = user.Id,
-                name = user.Name
-            });
-        }
 
         // POST: api/User/ResetPassword
         [HttpPost("ResetPassword")]
