@@ -17,7 +17,7 @@ namespace TransportApi.Controllers
         private readonly AppDbContext _context;
         private readonly IConfiguration _configuration;
         private readonly IEmailService _emailService;
-        
+
         public UserController(AppDbContext context, IConfiguration configuration, IEmailService emailService)
         {
             _context = context;
@@ -44,7 +44,7 @@ namespace TransportApi.Controllers
         public async Task<ActionResult<User>> GetUser(int id)
         {
             var user = await _context.Users.FindAsync(id);
-    
+
             if (user == null || user.Deleted == true)
             {
                 return NotFound();
@@ -96,7 +96,7 @@ namespace TransportApi.Controllers
 
             user.RoleId = role.Id;
             user.UpdatedAt = DateTime.Now;
-            
+
             await _context.SaveChangesAsync();
 
             return Ok(new { message = $"Role changed successfully to {request.RoleName}" });
@@ -142,62 +142,62 @@ namespace TransportApi.Controllers
             return Ok(new { message = "User unblocked successfully" });
         }
 
-       // POST: api/User/login
-[HttpPost("login")]
-public async Task<IActionResult> Login([FromBody] LoginRequest request)
-{
-    var user = await _context.Users.Include(u => u.Role).FirstOrDefaultAsync(u => u.Email == request.Email);
-    bool isPasswordValid = user != null && BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash);
+        // POST: api/User/login
+        [HttpPost("login")]
+        public async Task<IActionResult> Login([FromBody] LoginRequest request)
+        {
+            var user = await _context.Users.Include(u => u.Role).FirstOrDefaultAsync(u => u.Email == request.Email);
+            bool isPasswordValid = user != null && BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash);
 
-    if (user == null || !isPasswordValid)
-    {
-        return Unauthorized(new { message = "Invalid email or password" });
-    }
-    
-    if (user.Deleted == true)
-    {
-        return Unauthorized(new { message = "This user account is deleted." });
-    }
+            if (user == null || !isPasswordValid)
+            {
+                return Unauthorized(new { message = "Invalid email or password" });
+            }
 
-    var secretKey = _configuration["Jwt:Key"];
-    if (string.IsNullOrEmpty(secretKey))
-    {
-        return StatusCode(500, new { message = "JWT Secret Key is not configured on the server." });
-    }
+            if (user.Deleted == true)
+            {
+                return Unauthorized(new { message = "This user account is deleted." });
+            }
 
-    var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
-    var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            var secretKey = _configuration["Jwt:Key"];
+            if (string.IsNullOrEmpty(secretKey))
+            {
+                return StatusCode(500, new { message = "JWT Secret Key is not configured on the server." });
+            }
 
-    var claims = new[]
-    {
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            var claims = new[]
+            {
         new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
         new Claim(ClaimTypes.Email, user.Email),
-        new Claim(ClaimTypes.Role, user.Role?.RoleName ?? "User") 
+        new Claim(ClaimTypes.Role, user.Role?.RoleName ?? "User")
     };
 
-    var token = new JwtSecurityToken(
-        issuer: _configuration["Jwt:Issuer"],
-        audience: _configuration["Jwt:Audience"],
-        claims: claims,
-        expires: DateTime.Now.AddDays(5), 
-        signingCredentials: creds
-    );
+            var token = new JwtSecurityToken(
+                issuer: _configuration["Jwt:Issuer"],
+                audience: _configuration["Jwt:Audience"],
+                claims: claims,
+                expires: DateTime.Now.AddDays(5),
+                signingCredentials: creds
+            );
 
-    var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
+            var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
 
-    return Ok(new
-    {
-        message = "Login successful",
-        token = tokenString,
-        id = user.Id,
-        userId = user.Id, 
-        name = user.Name,
-        email = user.Email,
-        role = user.Role?.RoleName
-    });
-}
+            return Ok(new
+            {
+                message = "Login successful",
+                token = tokenString,
+                id = user.Id,
+                userId = user.Id,
+                name = user.Name,
+                email = user.Email,
+                role = user.Role?.RoleName
+            });
+        }
 
-    [HttpPost("register/app")]
+        [HttpPost("register/app")]
         public async Task<IActionResult> RegisterApp([FromBody] RegisterRequest request)
         {
             var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
@@ -205,7 +205,7 @@ public async Task<IActionResult> Login([FromBody] LoginRequest request)
             {
                 return BadRequest(new { message = "User with this email already exists" });
             }
-            
+
             string passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
             var user = new User
             {
@@ -216,7 +216,7 @@ public async Task<IActionResult> Login([FromBody] LoginRequest request)
                 UpdatedAt = DateTime.Now,
                 Deleted = false,
                 OustandingBalances = 0,
-                RoleId = 1 
+                RoleId = 1
             };
 
             _context.Users.Add(user);
@@ -231,10 +231,10 @@ public async Task<IActionResult> Login([FromBody] LoginRequest request)
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-            var claims = new[] { 
+            var claims = new[] {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Email, user.Email),
-                new Claim(ClaimTypes.Role, "User") 
+                new Claim(ClaimTypes.Role, "User")
             };
 
             var token = new JwtSecurityToken(
@@ -273,7 +273,7 @@ public async Task<IActionResult> Login([FromBody] LoginRequest request)
             user.ResetLink = Guid.NewGuid().ToString();
             await _context.SaveChangesAsync();
 
-            try 
+            try
             {
                 await _emailService.SendResetPasswordEmail(user.Email, user.ResetLink);
                 return Ok(new { message = "The password reset link has been sent to your email." });
@@ -281,7 +281,7 @@ public async Task<IActionResult> Login([FromBody] LoginRequest request)
             catch (Exception ex)
             {
                 Console.WriteLine($"EMAIL ERROR: {ex.Message}");
-                if (ex.InnerException != null) 
+                if (ex.InnerException != null)
                     Console.WriteLine($"INNER EXCEPTION: {ex.InnerException.Message}");
 
                 return StatusCode(500, new { message = "An error occurred while sending the email. Please try again later.", details = ex.Message });
@@ -299,13 +299,9 @@ public async Task<IActionResult> Login([FromBody] LoginRequest request)
                 return NotFound(new { message = "Invalid or expired token" });
             }
 
-            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
             user.ResetLink = null;
-            user.UpdatedAt = DateTime.Now;
 
-            await _context.SaveChangesAsync();
-
-            return Ok(new { message = "Password was changed successfully" });
+            return await UpdatePasswordAsync(user, request.NewPassword);
         }
 
         [HttpPost("ChangeAccountInfo/{id}")]
@@ -329,22 +325,28 @@ public async Task<IActionResult> Login([FromBody] LoginRequest request)
 
         [HttpPost("ChangeLoggedPassword/{id}")]
         [Authorize]
-        public async Task<IActionResult> ChangePassword(int id, [FromBody] ChangePasswordRequest request)
+        public async Task<IActionResult> ChangeLoggedPassword(int id, [FromBody] ChangePasswordRequest request)
         {
             var user = await _context.Users.FindAsync(id);
+
             if (user == null)
             {
                 return NotFound(new { message = "User not found" });
             }
 
-            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+            return await UpdatePasswordAsync(user, request.NewPassword);
+        }
+
+
+        private async Task<IActionResult> UpdatePasswordAsync(User user, string newPassword)
+        {
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
             user.UpdatedAt = DateTime.Now;
 
             await _context.SaveChangesAsync();
 
             return Ok(new { message = "Password changed successfully" });
         }
-
 
 
         public class LoginRequest
