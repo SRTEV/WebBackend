@@ -53,24 +53,51 @@ namespace TransportApi.Controllers
             return Ok(user);
         }
 
-        // POST: api/User/Delete/5
-        [HttpPost("Delete/{id}")]
-        [Authorize]
-        public async Task<IActionResult> DeleteUser(int id)
-        {
-            var user = await _context.Users.FindAsync(id);
-            if (user == null)
-            {
-                return NotFound(new { message = "User not found" });
-            }
+     
+[HttpPost("Delete/{id}")]
+[Authorize]
+public async Task<IActionResult> DeleteUser(int id,  [FromBody] DeleteUserRequest request)
+{
+  
+    if (request == null || string.IsNullOrWhiteSpace(request.Password))
+    {
+        return BadRequest(new {message = "Password is required"});
+}
 
-            user.Deleted = true;
-            user.UpdatedAt = DateTime.Now;
+    var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-            await _context.SaveChangesAsync();
+    if (!int.TryParse(userIdClaim, out int authenticatedUserId))
+    {
+        return Unauthorized(new{message = "Invalid user identity"});
+    }
 
-            return Ok(new { message = "User deleted successfully" });
-        }
+    if (authenticatedUserId != id)
+    {
+        return Forbid();
+    }
+
+
+    var user = await _context.Users.FindAsync(id);
+
+    if (user == null || user.Deleted == true)
+    {
+        return NotFound(new{ message = "User not found"});
+    }
+
+    bool isPasswordValid = BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash );
+
+    if (!isPasswordValid)
+    {
+        return Unauthorized(new{message = "Incorrect password"});
+    }
+    user.Deleted = true;
+    user.UpdatedAt = DateTime.UtcNow;
+
+    await _context.SaveChangesAsync();
+
+    return Ok(new{message = "User deleted successfully"});
+}
+
 
         // POST: api/User/ChangeRole/5
         [HttpPost("ChangeRole/{id}")]
@@ -260,33 +287,40 @@ namespace TransportApi.Controllers
 
 
         // POST: api/User/ResetPassword
-        [HttpPost("ResetPassword")]
-        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
-        {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+[HttpPost("ResetPassword")]
+public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+{
+  
+    var defaultResponse = Ok(new { message = "If the email exists in  system, a password reset link will be sent to it." });
 
-            if (user == null)
-            {
-                return Ok(new { message = "If such a user exists, the password reset link has been sent to your email." });
-            }
 
-            user.ResetLink = Guid.NewGuid().ToString();
-            await _context.SaveChangesAsync();
+    if (string.IsNullOrWhiteSpace(request?.Email))
+    {
+        return defaultResponse;
+    }
 
-            try
-            {
-                await _emailService.SendResetPasswordEmail(user.Email, user.ResetLink);
-                return Ok(new { message = "The password reset link has been sent to your email." });
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"EMAIL ERROR: {ex.Message}");
-                if (ex.InnerException != null)
-                    Console.WriteLine($"INNER EXCEPTION: {ex.InnerException.Message}");
+    var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
 
-                return StatusCode(500, new { message = "An error occurred while sending the email. Please try again later.", details = ex.Message });
-            }
-        }
+    if (user == null)
+    {
+        return defaultResponse;
+    }
+    user.ResetLink = Guid.NewGuid().ToString();
+
+    try
+    {
+        await _context.SaveChangesAsync();
+        await _emailService.SendResetPasswordEmail(user.Email, user.ResetLink);
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"EMAIL ERROR: {ex.Message}");
+        if (ex.InnerException != null)
+            Console.WriteLine($"INNER EXCEPTION: {ex.InnerException.Message}");
+    }
+
+    return defaultResponse;
+}
 
         // POST: api/User/ChangePassword
         [HttpPost("ChangePassword")]
@@ -347,7 +381,10 @@ namespace TransportApi.Controllers
 
             return Ok(new { message = "Password changed successfully" });
         }
-
+public class DeleteUserRequest
+{
+    public string Password { get; set; }
+}
 
         public class LoginRequest
         {
