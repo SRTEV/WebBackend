@@ -499,7 +499,7 @@
       "Microsoft.EntityFrameworkCore.Analyzers/9.0.2": {
         "type": "package"
       },
-      "Microsoft.EntityFrameworkCore.Design/9.0.0": {
+      "Microsoft.EntityFrameworkCore.Design/9.0.2": {
         "type": "package",
         "dependencies": {
           "Humanizer.Core": "2.14.1",
@@ -508,8 +508,8 @@
           "Microsoft.CodeAnalysis.CSharp": "4.8.0",
           "Microsoft.CodeAnalysis.CSharp.Workspaces": "4.8.0",
           "Microsoft.CodeAnalysis.Workspaces.MSBuild": "4.8.0",
-          "Microsoft.EntityFrameworkCore.Relational": "9.0.0",
-          "Microsoft.Extensions.DependencyModel": "9.0.0",
+          "Microsoft.EntityFrameworkCore.Relational": "9.0.2",
+          "Microsoft.Extensions.DependencyModel": "9.0.2",
           "Mono.TextTemplating": "3.0.0"
         },
         "compile": {
@@ -542,7 +542,7 @@
           }
         }
       },
-      "Microsoft.Extensions.DependencyModel/9.0.0": {
+      "Microsoft.Extensions.DependencyModel/9.0.2": {
         "type": "package",
         "compile": {
           "lib/net9.0/_._": {
@@ -558,7 +558,7 @@
           "buildTransitive/net8.0/_._": {}
         }
       },
-      "Microsoft.IdentityModel.Abstractions/8.19.1": {
+      "Microsoft.IdentityModel.Abstractions/8.23.0": {
         "type": "package",
         "compile": {
           "lib/net10.0/Microsoft.IdentityModel.Abstractions.dll": {
@@ -571,10 +571,10 @@
           }
         }
       },
-      "Microsoft.IdentityModel.JsonWebTokens/8.19.1": {
+      "Microsoft.IdentityModel.JsonWebTokens/8.23.0": {
         "type": "package",
         "dependencies": {
-          "Microsoft.IdentityModel.Tokens": "8.19.1"
+          "Microsoft.IdentityModel.Tokens": "8.23.0"
         },
         "compile": {
           "lib/net10.0/Microsoft.IdentityModel.JsonWebTokens.dll": {
@@ -587,10 +587,10 @@
           }
         }
       },
-      "Microsoft.IdentityModel.Logging/8.19.1": {
+      "Microsoft.IdentityModel.Logging/8.23.0": {
         "type": "package",
         "dependencies": {
-          "Microsoft.IdentityModel.Abstractions": "8.19.1"
+          "Microsoft.IdentityModel.Abstractions": "8.23.0"
         },
         "compile": {
           "lib/net10.0/Microsoft.IdentityModel.Logging.dll": {
@@ -636,11 +636,11 @@
           }
         }
       },
-      "Microsoft.IdentityModel.Tokens/8.19.1": {
+      "Microsoft.IdentityModel.Tokens/8.23.0": {
         "type": "package",
         "dependencies": {
           "Microsoft.Bcl.Cryptography": "10.0.2",
-          "Microsoft.IdentityModel.Logging": "8.19.1"
+          "Microsoft.IdentityModel.Logging": "8.23.0"
         },
         "compile": {
           "lib/net10.0/Microsoft.IdentityModel.Tokens.dll": {
@@ -929,11 +929,11 @@
           "buildTransitive/net8.0/_._": {}
         }
       },
-      "System.IdentityModel.Tokens.Jwt/8.19.1": {
+      "System.IdentityModel.Tokens.Jwt/8.23.0": {
         "type": "package",
         "dependencies": {
-          "Microsoft.IdentityModel.JsonWebTokens": "8.19.1",
-          "Microsoft.IdentityModel.Tokens": "8.19.1"
+          "Microsoft.IdentityModel.JsonWebTokens": "8.23.0",
+          "Microsoft.IdentityModel.Tokens": "8.23.0"
         },
         "compile": {
           "lib/net10.0/System.IdentityModel.Tokens.Jwt.dll": {
@@ -2200,10 +2200,10 @@
         "microsoft.entityframeworkcore.analyzers.nuspec"
       ]
     },
-    "Microsoft.EntityFrameworkCore.Design/9.0.0": {
-      "sha512": "Pqo8I+yHJ3VQrAoY0hiSncf+5P7gN/RkNilK5e+/K/yKh+yAWxdUAI6t0TG26a9VPlCa9FhyklzyFvRyj3YG9A==",
+    "Microsoft.EntityFrameworkCore.Design/9.0.2": {
+      "sha512": "WWRmTxb/yd05cTW+k32lLvIhffxilgYvwKHDxiqe7GRLKeceyMspuf5BRpW65sFF7S2G+Be9JgjUe1ypGqt9tg==",
       "type": "package",
-      "path": "microsoft.entityframeworkcore.design/9.0.0",
+      "path": "microsoft.entityframeworkcore.design/9.0.2",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
@@ -2212,7 +2212,7 @@
         "build/net8.0/Microsoft.EntityFrameworkCore.Design.props",
         "lib/net8.0/Microsoft.EntityFrameworkCore.Design.dll",
         "lib/net8.0/Microsoft.EntityFrameworkCore.Design.xml",
-        "microsoft.entityframeworkcore.design.9.0.0.nupkg.sha512",
+        "microsoft.entityframeworkcore.design.9.0.2.nupkg.sha512",
         "microsoft.entityframeworkcore.design.nuspec"
       ]
     },
@@ -2231,10 +2231,10 @@
         "microsoft.entityframeworkcore.relational.nuspec"
       ]
     },
-    "Microsoft.Extensions.DependencyModel/9.0.0": {
-      "sha512": "saxr2XzwgDU77LaQfYFXmddEDRUKHF4DaGMZkNB3qjdVSZlax3//dGJagJkKrGMIPNZs2jVFXITyCCR6UHJNdA==",
+    "Microsoft.Extensions.DependencyModel/9.0.2": {
+      "sha512": "3ImbcbS68jy9sKr9Z9ToRbEEX0bvIRdb8zyf5ebtL9Av2CUCGHvaO5wsSXfRfAjr60Vrq0tlmNji9IzAxW6EOw==",
       "type": "package",
-      "path": "microsoft.extensions.dependencymodel/9.0.0",
+      "path": "microsoft.extensions.dependencymodel/9.0.2",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
@@ -2254,15 +2254,15 @@
         "lib/net9.0/Microsoft.Extensions.DependencyModel.xml",
         "lib/netstandard2.0/Microsoft.Extensions.DependencyModel.dll",
         "lib/netstandard2.0/Microsoft.Extensions.DependencyModel.xml",
-        "microsoft.extensions.dependencymodel.9.0.0.nupkg.sha512",
+        "microsoft.extensions.dependencymodel.9.0.2.nupkg.sha512",
         "microsoft.extensions.dependencymodel.nuspec",
         "useSharedDesignerContext.txt"
       ]
     },
-    "Microsoft.IdentityModel.Abstractions/8.19.1": {
-      "sha512": "gFA8THIk23uNF/vMdOHnjIdXD1LyA2g12cHzMJ+Xag6WpgWLw6E/6uCXxvA0gp9d2yAvkRt3xzFzMUiO/hofnQ==",
+    "Microsoft.IdentityModel.Abstractions/8.23.0": {
+      "sha512": "JjiBkKj12OKvuWr+kB5sQwb7fmWW5bi03Mq/rd2Fu/7YwZ1RWQO9KhI9lBxki4o1VvY0wzqny8c7nwx1uuZzVg==",
       "type": "package",
-      "path": "microsoft.identitymodel.abstractions/8.19.1",
+      "path": "microsoft.identitymodel.abstractions/8.23.0",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
@@ -2281,14 +2281,14 @@
         "lib/net9.0/Microsoft.IdentityModel.Abstractions.xml",
         "lib/netstandard2.0/Microsoft.IdentityModel.Abstractions.dll",
         "lib/netstandard2.0/Microsoft.IdentityModel.Abstractions.xml",
-        "microsoft.identitymodel.abstractions.8.19.1.nupkg.sha512",
+        "microsoft.identitymodel.abstractions.8.23.0.nupkg.sha512",
         "microsoft.identitymodel.abstractions.nuspec"
       ]
     },
-    "Microsoft.IdentityModel.JsonWebTokens/8.19.1": {
-      "sha512": "6eeY+y2QFyjj3XnCz/8gJdoP5smYHTS9ow1bw2nsZzDIPjPhBZlackYTIduSMipVpxnoT/B62LkrXX2jPggOXg==",
+    "Microsoft.IdentityModel.JsonWebTokens/8.23.0": {
+      "sha512": "ePEm+mv5iswzckE3mygh52uFUeQpVlHa1B10nS4jpEyNV5tL1mLgRS9U5sMaRlhsPRsZ1DJP0+FhxSrOIfMGIg==",
       "type": "package",
-      "path": "microsoft.identitymodel.jsonwebtokens/8.19.1",
+      "path": "microsoft.identitymodel.jsonwebtokens/8.23.0",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
@@ -2307,14 +2307,14 @@
         "lib/net9.0/Microsoft.IdentityModel.JsonWebTokens.xml",
         "lib/netstandard2.0/Microsoft.IdentityModel.JsonWebTokens.dll",
         "lib/netstandard2.0/Microsoft.IdentityModel.JsonWebTokens.xml",
-        "microsoft.identitymodel.jsonwebtokens.8.19.1.nupkg.sha512",
+        "microsoft.identitymodel.jsonwebtokens.8.23.0.nupkg.sha512",
         "microsoft.identitymodel.jsonwebtokens.nuspec"
       ]
     },
-    "Microsoft.IdentityModel.Logging/8.19.1": {
-      "sha512": "H+sMrMpdbWnwkQnpb/ESkQovtOgdefmj0ecGCcP40mDKzE5i4dUYkH6599M9mWYFNGNJnTp92l/9wLubYXWimw==",
+    "Microsoft.IdentityModel.Logging/8.23.0": {
+      "sha512": "wSXXOoV4b4hhRcC492jyNBZkO0LWrcWtWP5Cl5ujrON3vTMlufXDT39gTZfBhFAZCV2XJtNU6DLHMDR6E9YpUg==",
       "type": "package",
-      "path": "microsoft.identitymodel.logging/8.19.1",
+      "path": "microsoft.identitymodel.logging/8.23.0",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
@@ -2333,7 +2333,7 @@
         "lib/net9.0/Microsoft.IdentityModel.Logging.xml",
         "lib/netstandard2.0/Microsoft.IdentityModel.Logging.dll",
         "lib/netstandard2.0/Microsoft.IdentityModel.Logging.xml",
-        "microsoft.identitymodel.logging.8.19.1.nupkg.sha512",
+        "microsoft.identitymodel.logging.8.23.0.nupkg.sha512",
         "microsoft.identitymodel.logging.nuspec"
       ]
     },
@@ -2383,10 +2383,10 @@
         "microsoft.identitymodel.protocols.openidconnect.nuspec"
       ]
     },
-    "Microsoft.IdentityModel.Tokens/8.19.1": {
-      "sha512": "KDiuSLXud2AFVNAOottd8ztVysfPeHyr4r8gofU3/VKUXlI7oytzGTnPsNJ/B3nui17rgz8wAdWNJOtzPjkUxw==",
+    "Microsoft.IdentityModel.Tokens/8.23.0": {
+      "sha512": "PUowLq8gqICt+oepHWmKBOJmnVmWoQ5dOVn2CgwFMBZZOAEMHgCQLWs8ONYdsjAyjhDHaFy+AAx0OMG/oV06Zw==",
       "type": "package",
-      "path": "microsoft.identitymodel.tokens/8.19.1",
+      "path": "microsoft.identitymodel.tokens/8.23.0",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
@@ -2405,7 +2405,7 @@
         "lib/net9.0/Microsoft.IdentityModel.Tokens.xml",
         "lib/netstandard2.0/Microsoft.IdentityModel.Tokens.dll",
         "lib/netstandard2.0/Microsoft.IdentityModel.Tokens.xml",
-        "microsoft.identitymodel.tokens.8.19.1.nupkg.sha512",
+        "microsoft.identitymodel.tokens.8.23.0.nupkg.sha512",
         "microsoft.identitymodel.tokens.nuspec"
       ]
     },
@@ -2821,10 +2821,10 @@
         "useSharedDesignerContext.txt"
       ]
     },
-    "System.IdentityModel.Tokens.Jwt/8.19.1": {
-      "sha512": "2VHcRtT95GAcW1E3aVBLvL2rAAMxKHXKMXKXFyWzwgkdFXZPMMvP8tVOfnRydL4vTr1RirNuGC6T8VSEF2YsPQ==",
+    "System.IdentityModel.Tokens.Jwt/8.23.0": {
+      "sha512": "mUuRjk0KKvF3dlF7CKcnjHn/4TFaWRDGjDRtn1rACitoIflv96apfLD9KPDisyCEuc/0ierocnHCvIXBvCL4Sw==",
       "type": "package",
-      "path": "system.identitymodel.tokens.jwt/8.19.1",
+      "path": "system.identitymodel.tokens.jwt/8.23.0",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
@@ -2843,7 +2843,7 @@
         "lib/net9.0/System.IdentityModel.Tokens.Jwt.xml",
         "lib/netstandard2.0/System.IdentityModel.Tokens.Jwt.dll",
         "lib/netstandard2.0/System.IdentityModel.Tokens.Jwt.xml",
-        "system.identitymodel.tokens.jwt.8.19.1.nupkg.sha512",
+        "system.identitymodel.tokens.jwt.8.23.0.nupkg.sha512",
         "system.identitymodel.tokens.jwt.nuspec"
       ]
     },
@@ -2926,30 +2926,31 @@
       "Microsoft.AspNetCore.Authentication.JwtBearer >= 10.0.9",
       "Microsoft.AspNetCore.OpenApi >= 10.0.9",
       "Microsoft.EntityFrameworkCore >= 9.0.2",
-      "Microsoft.EntityFrameworkCore.Design >= 9.0.0",
+      "Microsoft.EntityFrameworkCore.Design >= 9.0.2",
       "Microsoft.EntityFrameworkCore.Relational >= 9.0.2",
+      "Microsoft.IdentityModel.Tokens >= 8.23.0",
       "Microsoft.OpenApi >= 2.3.12",
       "MimeKit >= 4.17.0",
       "NetTopologySuite >= 2.6.0",
       "Pomelo.EntityFrameworkCore.MySql >= 9.0.0",
       "Stripe.net >= 52.4.1",
-      "System.IdentityModel.Tokens.Jwt >= 8.19.1"
+      "System.IdentityModel.Tokens.Jwt >= 8.23.0"
     ]
   },
   "packageFolders": {
-    "C:\\Users\\vozdi\\.nuget\\packages\\": {}
+    "/Users/arturtrokhymenko/.nuget/packages/": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\gowno\\back\\WebBackend\\TransportApi\\TransportApi.csproj",
+      "projectUniqueName": "/Users/arturtrokhymenko/Documents/GitHub/WebBackend/TransportApi/TransportApi.csproj",
       "projectName": "TransportApi",
-      "projectPath": "D:\\gowno\\back\\WebBackend\\TransportApi\\TransportApi.csproj",
-      "packagesPath": "C:\\Users\\vozdi\\.nuget\\packages\\",
-      "outputPath": "D:\\gowno\\back\\WebBackend\\TransportApi\\obj\\",
+      "projectPath": "/Users/arturtrokhymenko/Documents/GitHub/WebBackend/TransportApi/TransportApi.csproj",
+      "packagesPath": "/Users/arturtrokhymenko/.nuget/packages/",
+      "outputPath": "/Users/arturtrokhymenko/Documents/GitHub/WebBackend/TransportApi/obj/",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Users\\vozdi\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        "/Users/arturtrokhymenko/.nuget/NuGet/NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net10.0"
@@ -3009,11 +3010,15 @@
             "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
             "suppressParent": "All",
             "target": "Package",
-            "version": "[9.0.0, )"
+            "version": "[9.0.2, )"
           },
           "Microsoft.EntityFrameworkCore.Relational": {
             "target": "Package",
             "version": "[9.0.2, )"
+          },
+          "Microsoft.IdentityModel.Tokens": {
+            "target": "Package",
+            "version": "[8.23.0, )"
           },
           "Microsoft.OpenApi": {
             "target": "Package",
@@ -3037,7 +3042,7 @@
           },
           "System.IdentityModel.Tokens.Jwt": {
             "target": "Package",
-            "version": "[8.19.1, )"
+            "version": "[8.23.0, )"
           }
         },
         "imports": [
@@ -3059,7 +3064,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json",
+        "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/10.0.301/PortableRuntimeIdentifierGraph.json",
         "packagesToPrune": {
           "Microsoft.AspNetCore": "(,10.0.32767]",
           "Microsoft.AspNetCore.Antiforgery": "(,10.0.32767]",
@@ -3482,8 +3487,28 @@
       "code": "NU1903",
       "level": "Warning",
       "warningLevel": 1,
-      "message": "Pakiet „Microsoft.OpenApi” 2.3.12 ma znane wysoka luki w zabezpieczeniach o ważności, https://github.com/advisories/GHSA-v5pm-xwqc-g5wc",
+      "message": "Package 'Microsoft.OpenApi' 2.3.12 has a known high severity vulnerability, https://github.com/advisories/GHSA-v5pm-xwqc-g5wc",
       "libraryId": "Microsoft.OpenApi",
+      "targetGraphs": [
+        "net10.0"
+      ]
+    },
+    {
+      "code": "NU1902",
+      "level": "Warning",
+      "warningLevel": 1,
+      "message": "Package 'System.Security.Cryptography.Pkcs' 10.0.0 has a known moderate severity vulnerability, https://github.com/advisories/GHSA-2fmv-rv2c-59x7",
+      "libraryId": "System.Security.Cryptography.Pkcs",
+      "targetGraphs": [
+        "net10.0"
+      ]
+    },
+    {
+      "code": "NU1903",
+      "level": "Warning",
+      "warningLevel": 1,
+      "message": "Package 'System.Security.Cryptography.Pkcs' 10.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-846f-f764-76mx",
+      "libraryId": "System.Security.Cryptography.Pkcs",
       "targetGraphs": [
         "net10.0"
       ]

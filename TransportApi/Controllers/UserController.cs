@@ -53,50 +53,69 @@ namespace TransportApi.Controllers
             return Ok(user);
         }
 
-     
-[HttpPost("Delete/{id}")]
-[Authorize]
-public async Task<IActionResult> DeleteUser(int id,  [FromBody] DeleteUserRequest request)
-{
-  
-    if (request == null || string.IsNullOrWhiteSpace(request.Password))
-    {
-        return BadRequest(new {message = "Password is required"});
-}
+        // POST: api/User/Delete/5
+        [HttpPost("Delete/{id}")]
+        [Authorize]
+        public async Task<IActionResult> DeleteUser(int id)
+        {
+            var user = await _context.Users.FindAsync(id);
+            if (user == null)
+            {
+                return NotFound(new { message = "User not found" });
+            }
 
-    var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            user.Deleted = true;
+            user.UpdatedAt = DateTime.Now;
 
-    if (!int.TryParse(userIdClaim, out int authenticatedUserId))
-    {
-        return Unauthorized(new{message = "Invalid user identity"});
-    }
+            await _context.SaveChangesAsync();
 
-    if (authenticatedUserId != id)
-    {
-        return Forbid();
-    }
+            return Ok(new { message = "User deleted successfully" });
+        }
+
+        // POST: api/User/App/Delete/5
+        [HttpPost("App/Delete/{id}")]
+        [Authorize]
+        public async Task<IActionResult> DeleteUser(int id, [FromBody] DeleteUserRequest request)
+        {
+
+            if (request == null || string.IsNullOrWhiteSpace(request.Password))
+            {
+                return BadRequest(new { message = "Password is required" });
+            }
+
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (!int.TryParse(userIdClaim, out int authenticatedUserId))
+            {
+                return Unauthorized(new { message = "Invalid user identity" });
+            }
+
+            if (authenticatedUserId != id)
+            {
+                return Forbid();
+            }
 
 
-    var user = await _context.Users.FindAsync(id);
+            var user = await _context.Users.FindAsync(id);
 
-    if (user == null || user.Deleted == true)
-    {
-        return NotFound(new{ message = "User not found"});
-    }
+            if (user == null || user.Deleted == true)
+            {
+                return NotFound(new { message = "User not found" });
+            }
 
-    bool isPasswordValid = BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash );
+            bool isPasswordValid = BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash);
 
-    if (!isPasswordValid)
-    {
-        return Unauthorized(new{message = "Incorrect password"});
-    }
-    user.Deleted = true;
-    user.UpdatedAt = DateTime.UtcNow;
+            if (!isPasswordValid)
+            {
+                return Unauthorized(new { message = "Incorrect password" });
+            }
+            user.Deleted = true;
+            user.UpdatedAt = DateTime.UtcNow;
 
-    await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync();
 
-    return Ok(new{message = "User deleted successfully"});
-}
+            return Ok(new { message = "User deleted successfully" });
+        }
 
 
         // POST: api/User/ChangeRole/5
@@ -199,7 +218,8 @@ public async Task<IActionResult> DeleteUser(int id,  [FromBody] DeleteUserReques
             {
         new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
         new Claim(ClaimTypes.Email, user.Email),
-        new Claim(ClaimTypes.Role, user.Role?.RoleName ?? "User")
+        new Claim(ClaimTypes.Role, user.Role?.RoleName ?? "User"),
+        new Claim("roleId", user.RoleId.ToString())
     };
 
             var token = new JwtSecurityToken(
@@ -220,7 +240,8 @@ public async Task<IActionResult> DeleteUser(int id,  [FromBody] DeleteUserReques
                 userId = user.Id,
                 name = user.Name,
                 email = user.Email,
-                role = user.Role?.RoleName
+                role = user.Role?.RoleName,
+                roleId = user.RoleId
             });
         }
 
@@ -287,40 +308,40 @@ public async Task<IActionResult> DeleteUser(int id,  [FromBody] DeleteUserReques
 
 
         // POST: api/User/ResetPassword
-[HttpPost("ResetPassword")]
-public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
-{
-  
-    var defaultResponse = Ok(new { message = "If the email exists in  system, a password reset link will be sent to it." });
+        [HttpPost("ResetPassword")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+        {
+
+            var defaultResponse = Ok(new { message = "If the email exists in  system, a password reset link will be sent to it." });
 
 
-    if (string.IsNullOrWhiteSpace(request?.Email))
-    {
-        return defaultResponse;
-    }
+            if (string.IsNullOrWhiteSpace(request?.Email))
+            {
+                return defaultResponse;
+            }
 
-    var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
 
-    if (user == null)
-    {
-        return defaultResponse;
-    }
-    user.ResetLink = Guid.NewGuid().ToString();
+            if (user == null)
+            {
+                return defaultResponse;
+            }
+            user.ResetLink = Guid.NewGuid().ToString();
 
-    try
-    {
-        await _context.SaveChangesAsync();
-        await _emailService.SendResetPasswordEmail(user.Email, user.ResetLink);
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"EMAIL ERROR: {ex.Message}");
-        if (ex.InnerException != null)
-            Console.WriteLine($"INNER EXCEPTION: {ex.InnerException.Message}");
-    }
+            try
+            {
+                await _context.SaveChangesAsync();
+                await _emailService.SendResetPasswordEmail(user.Email, user.ResetLink);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"EMAIL ERROR: {ex.Message}");
+                if (ex.InnerException != null)
+                    Console.WriteLine($"INNER EXCEPTION: {ex.InnerException.Message}");
+            }
 
-    return defaultResponse;
-}
+            return defaultResponse;
+        }
 
         // POST: api/User/ChangePassword
         [HttpPost("ChangePassword")]
@@ -381,10 +402,10 @@ public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest r
 
             return Ok(new { message = "Password changed successfully" });
         }
-public class DeleteUserRequest
-{
-    public string Password { get; set; }
-}
+        public class DeleteUserRequest
+        {
+            public string Password { get; set; }
+        }
 
         public class LoginRequest
         {
