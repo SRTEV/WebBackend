@@ -31,8 +31,7 @@ namespace TransportApi.Controllers
             if (card == null) return NotFound();
             return Ok(card);
         }
-
-        [HttpPost]
+[HttpPost]
         [Authorize] 
         public async Task<ActionResult<TransportApi.Models.Card>> PostCard(TransportApi.Models.Card card)
         {
@@ -46,12 +45,31 @@ namespace TransportApi.Controllers
                 
             if (user == null) return NotFound("User not found");
 
-            // Якщо у користувача вже є картка, оновлюємо її замість створення дублікатів
+            // 1. Спершу шукаємо, чи є така картка в базі взагалі (за номером)
+            var existingCardInDb = await _context.Cards
+                .FirstOrDefaultAsync(c => c.CardNumber == card.CardNumber);
+
+            if (existingCardInDb != null)
+            {
+                // Якщо картка вже існує в базі, просто прив'язуємо її до цього юзера
+                user.CardId = existingCardInDb.Id; // (замініть .ID на .Id, якщо у вашій моделі літера 'd' маленька)
+                
+                // Оновлюємо дані на випадок змін
+                existingCardInDb.ExpiryDate = card.ExpiryDate;
+                existingCardInDb.CvvCode = card.CvvCode;
+
+                _context.Cards.Update(existingCardInDb);
+                await _context.SaveChangesAsync();
+                
+                return Ok(existingCardInDb);
+            }
+
+            // 2. Якщо цієї картки взагалі не було в базі, перевіряємо чи у користувача вже була інша привязана картка
             if (user.Card != null)
             {
                 user.Card.CardNumber = card.CardNumber;
                 user.Card.ExpiryDate = card.ExpiryDate;
-                user.Card.CvvCode = card.CvvCode; // Зберігаємо справжній CVV або передані дані
+                user.Card.CvvCode = card.CvvCode;
                 
                 _context.Cards.Update(user.Card);
                 await _context.SaveChangesAsync();
@@ -59,7 +77,7 @@ namespace TransportApi.Controllers
             }
             else
             {
-                // Створюємо новий запис картки спеціально для цього користувача
+                // 3. Якщо картки немає ні в базі, ні у користувача — створюємо нову
                 _context.Cards.Add(card);
                 await _context.SaveChangesAsync();
 

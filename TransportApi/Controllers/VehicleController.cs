@@ -111,6 +111,7 @@ namespace TransportApi.Controllers
 
             return NoContent();
         }
+        
 [HttpGet("scan/{QrCode}")]
 [Authorize]
 public async Task<ActionResult<Vehicle>> ScanVehicle(string QrCode)
@@ -133,8 +134,7 @@ public async Task<ActionResult<Vehicle>> ScanVehicle(string QrCode)
 [Authorize(Roles = "Repairman")]
 public async Task<ActionResult<Vehicle>> InRemont(int vehicleId)
 {
-    var vehicle = await _context.Vehicles
-        .FirstOrDefaultAsync(v => v.Id == vehicleId && (v.Deleted == null || v.Deleted == false));
+    var vehicle = await _context.Vehicles .FirstOrDefaultAsync(v => v.Id == vehicleId && (v.Deleted == null || v.Deleted == false));
 
     if (vehicle == null)
     {
@@ -145,8 +145,6 @@ public async Task<ActionResult<Vehicle>> InRemont(int vehicleId)
         return BadRequest("Vehicle is already in repair.");
     }
 
-   
-
     vehicle.VehicleStatusId = 4;
     vehicle.LastActivity = DateTime.UtcNow;
 
@@ -155,6 +153,8 @@ public async Task<ActionResult<Vehicle>> InRemont(int vehicleId)
 
     return Ok("Vehicle status updated to 'In Repair'.   ");
 }
+
+
 [HttpPut("endremont/{vehicleId}")]
 [Authorize(Roles = "Repairman")]
 public async Task<ActionResult<Vehicle>> EndRemont(int vehicleId)

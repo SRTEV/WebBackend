@@ -17,7 +17,7 @@ namespace TransportApi.Controllers
         {
             _context = context;
             _configuration = configuration;
-            
+
             StripeConfiguration.ApiKey = _configuration["STRIPE"];
         }
 
@@ -43,14 +43,14 @@ namespace TransportApi.Controllers
             return CreatedAtAction(nameof(GetPayment), new { id = payment.Id }, payment);
         }
 
-     [HttpPost("pay/{rentalId}/{userId}")]
+        [HttpPost("pay/{rentalId}/{userId}")]
         public async Task<IActionResult> Pay(int rentalId, int userId, [FromQuery] string? paymentMethodId = null)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
                 var rental = await _context.Rentals
-                    .Include(r => r.RentalPlan) 
+                    .Include(r => r.RentalPlan)
                     .FirstOrDefaultAsync(r => r.Id == rentalId);
 
                 if (rental == null) return NotFound(new { message = "Rental not found." });
@@ -69,11 +69,11 @@ namespace TransportApi.Controllers
 
                 DateTime startTime = rental.StartTime;
                 DateTime endTime = DateTime.UtcNow;
-                
+
                 decimal totalMinutes = (decimal)(endTime - startTime).TotalMinutes;
                 if (totalMinutes < 1) totalMinutes = 1;
 
-                decimal planPrice = rental.RentalPlan?.Price ?? 10.0m; 
+                decimal planPrice = rental.RentalPlan?.Price ?? 10.0m;
                 decimal planTimeMinutes = rental.RentalPlan?.Time ?? 30.0m;
 
                 decimal pricePerMinute = planPrice / planTimeMinutes;
@@ -108,24 +108,30 @@ namespace TransportApi.Controllers
                     else if (rank >= 2 && rank <= 4) matchedReward = rewards.ElementAtOrDefault(1);
                     else if (rank >= 5) matchedReward = rewards.ElementAtOrDefault(2);
 
-                    if (matchedReward != null)
+                if (matchedReward != null)
                     {
                         string rewardName = matchedReward.Name?.ToLower().Trim() ?? string.Empty;
 
                         if (rewardName.Contains("free km"))
-                        {
-                            decimal freeKmAvailable = userResult.RewardAmount;
-                            if (amount <= freeKmAvailable)
+                        {  decimal freeKmAvailable = userResult.RewardAmount;
+                            decimal tripDistanceKm = rental.Distance > 0 ? (decimal)rental.Distance / 1000m : (totalMinutes / 5m);
+
+                            if (tripDistanceKm <= freeKmAvailable)
                             {
-                                userResult.RewardAmount -= (int)amount;
                                 amount = 0;
                             }
                             else
                             {
-                                amount -= freeKmAvailable;
-                                userResult.RewardAmount = 0;
+                              
+                                decimal pricePerKm = tripDistanceKm > 0 ? originalAmount / tripDistanceKm : originalAmount;
+                                decimal discountAmount = freeKmAvailable * pricePerKm;
+
+                                amount = originalAmount - discountAmount;
                             }
+
+                            userResult.RewardAmount = 0;
                             isCoveredByReward = true;
+                            _context.UsersResults.Update(userResult);
                         }
                         else if (rewardName.Contains("discount"))
                         {
@@ -133,21 +139,18 @@ namespace TransportApi.Controllers
                             amount = amount - (amount * discountPercent / 100);
                             userResult.RewardAmount = 0;
                             isCoveredByReward = true;
+                            _context.UsersResults.Update(userResult);
                         }
                         else if (rewardName.Contains("free ride"))
                         {
-                            // СТРОГА ПЕРЕВІРКА: чи співпадає план поточної поїздки з тим, що вказано в юніті купона
                             if (int.TryParse(matchedReward.Unit, out int rewardPlanId) && rental.RentalPlanId == rewardPlanId)
                             {
-                                decimal tariffCoveredAmount = userResult.RewardAmount; 
+                                decimal tariffCoveredAmount = userResult.RewardAmount;
                                 amount = amount <= tariffCoveredAmount ? 0 : amount - tariffCoveredAmount;
                                 userResult.RewardAmount = 0;
                                 isCoveredByReward = true;
+                                _context.UsersResults.Update(userResult);
                             }
-                        }
-                        if (isCoveredByReward)
-                        {
-                            _context.UsersResults.Update(userResult);
                         }
                     }
                 }
@@ -161,7 +164,7 @@ namespace TransportApi.Controllers
                 {
                     amount = 0;
                 }
-                
+
                 string paymentStatus = "Completed";
 
                 if (amount > 0)
@@ -174,7 +177,7 @@ namespace TransportApi.Controllers
                         {
                             Amount = amountInCents,
                             Currency = "pln",
-                            PaymentMethod = stripePaymentMethodId, 
+                            PaymentMethod = stripePaymentMethodId,
                             Confirm = true,
                             AutomaticPaymentMethods = new PaymentIntentAutomaticPaymentMethodsOptions
                             {
@@ -220,7 +223,7 @@ namespace TransportApi.Controllers
                 };
 
                 _context.Payments.Add(payment);
-                await _context.SaveChangesAsync(); 
+                await _context.SaveChangesAsync();
 
                 // Прив’язуємо PaymentId до результату змагання ТІЛЬКИ якщо купон реально застосувався до цієї поїздки
                 if (userResult != null && isCoveredByReward)
@@ -233,17 +236,17 @@ namespace TransportApi.Controllers
                 {
                     user.OustandingBalances += originalAmount;
                     _context.Users.Update(user);
-                    
+
                     await _context.SaveChangesAsync();
                     await transaction.CommitAsync();
-                    
+
                     return BadRequest(new { message = "Payment failed or card declined. Added to outstanding balance.", paymentId = payment.Id, calculatedAmount = originalAmount });
                 }
                 else if (paymentStatus == "Processing")
                 {
                     await _context.SaveChangesAsync();
                     await transaction.CommitAsync();
-                    
+
                     return Accepted(new { message = "Payment requires further action.", paymentId = payment.Id, calculatedAmount = amount });
                 }
 
@@ -310,7 +313,7 @@ namespace TransportApi.Controllers
                     _context.Users.Update(user);
                     await _context.SaveChangesAsync();
                     await transaction.CommitAsync();
-                    
+
                     return Ok(new { message = $"Outstanding balance of {outstandingAmount} PLN paid successfully.", finalAmountPaid = outstandingAmount });
                 }
                 else if (paymentIntent.Status == "requires_action" || paymentIntent.Status == "processing")

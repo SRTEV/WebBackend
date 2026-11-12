@@ -66,15 +66,7 @@ namespace TransportApi.Services
                 var thresholdDate = DateTime.UtcNow.AddDays(-3);
 
                 var vehiclesToUpdate = await dbContext.Vehicles
-                    .Where(v =>
-                        v.VehicleStatusId != 3 &&
-                        v.VehicleStatusId != 2 &&
-                        (
-                            v.BatteryLevel < 15 ||
-                            v.LastActivity < thresholdDate
-                        ))
-                    .ToListAsync();
-
+                    .Where(v =>v.VehicleStatusId != 3 &&v.VehicleStatusId != 2 &&(v.BatteryLevel < 15 || v.LastActivity < thresholdDate)).ToListAsync();
                 if (!vehiclesToUpdate.Any())
                 {
                     return;
@@ -96,10 +88,7 @@ namespace TransportApi.Services
 
                 _logger.LogInformation(
                     "Successfully updated {Count} vehicles to 'NeedCheck' status.",
-                    vehiclesToUpdate.Count
-                );
-            }
-        }
+                    vehiclesToUpdate.Count  );}}
 
         private async Task UpdateVehiclesZoneStatusAsync()
         {

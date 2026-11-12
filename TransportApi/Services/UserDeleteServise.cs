@@ -27,7 +27,7 @@ namespace TransportApi.Services
             {
                 try
                 {
-                    await DeleteOldSoftDeletedUsersAsync();
+                    await DeleteUsers();
                 }
                 catch (Exception ex)
                 {
@@ -37,8 +37,7 @@ namespace TransportApi.Services
                 await Task.Delay(_checkInterval, stoppingToken);
             }
         }
-
-        private async Task DeleteOldSoftDeletedUsersAsync()
+        private async Task DeleteUsers()
         {
             using (var scope = _serviceProvider.CreateScope())
             {
@@ -55,9 +54,5 @@ namespace TransportApi.Services
                     await context.SaveChangesAsync();
                     
                     _logger.LogInformation($"User Deletion Background Service deleted {usersToDelete.Count} users who were marked as deleted more than 30 days ago.");
-                }
-            }
-        }
-    }
-}
+                }}}}}
 
