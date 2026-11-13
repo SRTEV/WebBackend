@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TransportApi.Models;
 using Microsoft.AspNetCore.Authorization;   
+
 namespace TransportApi.Controllers
 {
     [Route("api/[controller]")]
@@ -72,8 +73,9 @@ namespace TransportApi.Controllers
                 RewardTypes = c.RewardTypes.Select(r => new { r.Id, Name = r.Name ?? "", Unit = r.Unit ?? "" })
             });
         }
-[HttpGet("latest/{vehicleTypeId}")]
-[Authorize]
+
+        [HttpGet("latest/{vehicleTypeId}")]
+        [Authorize]
         public async Task<IActionResult> GetLatestCompetition(int vehicleTypeId)
         {
             var currentDate = DateOnly.FromDateTime(DateTime.UtcNow);
@@ -103,11 +105,11 @@ namespace TransportApi.Controllers
                 }
             }
 
-    
             if (competition == null)
             {
                 return NotFound(new { message = "Challenge not found" });
             }
+
             return Ok(new
             {
                 competition.Id,
@@ -117,51 +119,51 @@ namespace TransportApi.Controllers
                 competition.GoalValue,
                 competition.VehicleTypeId,
                 VehicleTypeName = competition.VehicleType?.Name ?? "",
-                IsEnded = isEnded, // true — якщо завершився, false — якщо активний
+                IsEnded = isEnded,
                 GoalTypes = competition.GoalTypes.Select(g => new { g.Id, Name = g.Name ?? "" }),
                 RewardTypes = competition.RewardTypes.Select(r => new { r.Id, Name = r.Name ?? "", Unit = r.Unit ?? "" })
             });
         }
 
-[HttpPost]
-public async Task<IActionResult> PostCompetition([FromBody] Competition competition)
-{
-    if (!ModelState.IsValid)
-    {
-        return BadRequest(ModelState);
-    }
-
-    competition.VehicleType = null!;
-
-    var incomingGoals = competition.GoalTypes.ToList();
-    var incomingRewards = competition.RewardTypes.ToList();
-    
-    competition.GoalTypes.Clear();
-    competition.RewardTypes.Clear();
-
-    foreach (var g in incomingGoals)
-    {
-        var existingGoal = await _context.GoalTypes.FindAsync(g.Id);
-        if (existingGoal != null)
+        [HttpPost]
+        public async Task<IActionResult> PostCompetition([FromBody] Competition competition)
         {
-            competition.GoalTypes.Add(existingGoal);
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            competition.VehicleType = null!;
+
+            var incomingGoals = competition.GoalTypes?.ToList() ?? new List<GoalType>();
+            var incomingRewards = competition.RewardTypes?.ToList() ?? new List<RewardType>();
+            
+            competition.GoalTypes.Clear();
+            competition.RewardTypes.Clear();
+
+            foreach (var gt in incomingGoals)
+            {
+                competition.GoalTypes.Add(new GoalType
+                {
+                    Name = gt.Name,
+                    Competition = competition
+                });
+            }
+            foreach (var rt in incomingRewards)
+            {
+                competition.RewardTypes.Add(new RewardType
+                {
+                    Name = rt.Name,
+                    Unit = rt.Unit,
+                    Competition = competition
+                });
+            }
+
+            _context.Competitions.Add(competition);
+            await _context.SaveChangesAsync();
+
+            return CreatedAtAction(nameof(GetCompetition), new { id = competition.Id }, competition);
         }
-    }
-
-    foreach (var r in incomingRewards)
-    {
-        var existingReward = await _context.RewardTypes.FindAsync(r.Id);
-        if (existingReward != null)
-        {
-            competition.RewardTypes.Add(existingReward);
-        }
-    }
-
-    _context.Competitions.Add(competition);
-    await _context.SaveChangesAsync();
-
-    return CreatedAtAction(nameof(GetCompetition), new { id = competition.Id }, competition);
-}
 
         [HttpPut("{id}")]
         public async Task<IActionResult> PutCompetition(int id, [FromBody] Competition competition)
@@ -219,67 +221,63 @@ public async Task<IActionResult> PostCompetition([FromBody] Competition competit
             return NoContent();
         }
 
-    [HttpGet("UserResults/{userId}")]
-    [Authorize]
-    public async Task<IActionResult> GetAllUserResults(int userId)
-    {
-        var userResults = await _context.UsersResults
-            .Where(ur => ur.UserId == userId)
-            .Include(ur => ur.Competition)
-                .ThenInclude(c => c.VehicleType)
-            .Include(ur => ur.Competition)
-                .ThenInclude(c => c.RewardTypes)
-            .AsNoTracking()
-            .ToListAsync();
-
-        if (userResults == null || !userResults.Any())
+        [HttpGet("UserResults/{userId}")]
+        [Authorize]
+        public async Task<IActionResult> GetAllUserResults(int userId)
         {
-            return NotFound(new { message = "No results found for this user." });
-        }
+            var userResults = await _context.UsersResults
+                .Where(ur => ur.UserId == userId)
+                .Include(ur => ur.Competition)
+                    .ThenInclude(c => c.VehicleType)
+                .Include(ur => ur.Competition)
+                    .ThenInclude(c => c.RewardTypes)
+                .AsNoTracking()
+                .ToListAsync();
 
-        var responseList = userResults.Select(userResult =>
-        {
-            var rewards = userResult.Competition?.RewardTypes?.OrderBy(rt => rt.Id).ToList() ?? new List<RewardType>();
-
-            RewardType? matchedReward = null;
-            int rank = userResult.Rank.Value;
-
-            if (rank == 1)
+            if (userResults == null || !userResults.Any())
             {
-                matchedReward = rewards.ElementAtOrDefault(0);
-            }
-            else if (rank >= 2 && rank <= 4)
-            {
-                matchedReward = rewards.ElementAtOrDefault(1);
-            }
-            else if (rank == 5)
-            {
-                matchedReward = rewards.ElementAtOrDefault(2);
+                return NotFound(new { message = "No results found for this user." });
             }
 
-            return new
+            var responseList = userResults.Select(userResult =>
             {
-                userResult.Id,
-                userResult.UserId,
-                userResult.CompetitionId,
-                userResult.Score,
-                userResult.Rank,
-                userResult.RewardAmount,
-                paymentId = userResult.PaymentId,
-                rewardName = matchedReward?.Name ?? "No reward",
-                rewardUnit = matchedReward?.Unit ?? "0",
-                challengeTypeName = userResult.Competition?.Description ?? "Challenge",
-                vehicleTypeName = userResult.Competition?.VehicleType?.Name ?? "",
-                startDate = userResult.Competition?.StartDate.ToString("yyyy-MM-dd"),
-                endDate = userResult.Competition?.EndDate.ToString("yyyy-MM-dd")
-            };
-        }).ToList();
+                var rewards = userResult.Competition?.RewardTypes?.OrderBy(rt => rt.Id).ToList() ?? new List<RewardType>();
 
-        return Ok(responseList);
-    }
-        
+                RewardType? matchedReward = null;
+                int rank = userResult.Rank.Value;
 
-        
+                if (rank == 1)
+                {
+                    matchedReward = rewards.ElementAtOrDefault(0);
+                }
+                else if (rank >= 2 && rank <= 4)
+                {
+                    matchedReward = rewards.ElementAtOrDefault(1);
+                }
+                else if (rank == 5)
+                {
+                    matchedReward = rewards.ElementAtOrDefault(2);
+                }
+
+                return new
+                {
+                    userResult.Id,
+                    userResult.UserId,
+                    userResult.CompetitionId,
+                    userResult.Score,
+                    userResult.Rank,
+                    userResult.RewardAmount,
+                    paymentId = userResult.PaymentId,
+                    rewardName = matchedReward?.Name ?? "No reward",
+                    rewardUnit = matchedReward?.Unit ?? "0",
+                    challengeTypeName = userResult.Competition?.Description ?? "Challenge",
+                    vehicleTypeName = userResult.Competition?.VehicleType?.Name ?? "",
+                    startDate = userResult.Competition?.StartDate.ToString("yyyy-MM-dd"),
+                    endDate = userResult.Competition?.EndDate.ToString("yyyy-MM-dd")
+                };
+            }).ToList();
+
+            return Ok(responseList);
         }
     }
-
+}

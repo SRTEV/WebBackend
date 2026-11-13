@@ -21,7 +21,7 @@ namespace TransportApi.Controllers
         public async Task<ActionResult<IEnumerable<Vehicle>>> GetVehicle()
         {
             var vehicles = await _context.Vehicles
-                .Include(v => v.VehicleType) 
+                .Include(v => v.VehicleType)
                 .Include(v => v.VehicleStatus)
                 .Where(v => v.Deleted == null || v.Deleted == false)
                 .ToListAsync();
@@ -68,12 +68,9 @@ namespace TransportApi.Controllers
             {
                 return BadRequest("ID mismatch");
             }
-
             vehicle.VehicleType = null;
             vehicle.VehicleStatus = null;
-
             _context.Entry(vehicle).State = EntityState.Modified;
-
             try
             {
                 await _context.SaveChangesAsync();
@@ -89,7 +86,6 @@ namespace TransportApi.Controllers
                     throw;
                 }
             }
-
             return NoContent();
         }
 
@@ -105,116 +101,117 @@ namespace TransportApi.Controllers
             }
 
             vehicle.Deleted = true;
-            
+
             _context.Entry(vehicle).State = EntityState.Modified;
             await _context.SaveChangesAsync();
 
             return NoContent();
         }
-[HttpGet("scan/{QrCode}")]
-[Authorize]
-public async Task<ActionResult<Vehicle>> ScanVehicle(string QrCode)
-{
-    var vehicle = await _context.Vehicles
-        .Include(v => v.VehicleStatus) 
-        .Include(v => v.VehicleType)   
-        .FirstOrDefaultAsync(v => v.QrCode == QrCode && (v.Deleted == null || v.Deleted == false));
 
-    if (vehicle == null)
-    {
-        return NotFound();
-    }
+        [HttpGet("scan/{QrCode}")]
+        [Authorize]
+        public async Task<ActionResult<Vehicle>> ScanVehicle(string QrCode)
+        {
+            var vehicle = await _context.Vehicles
+                .Include(v => v.VehicleStatus)
+                .Include(v => v.VehicleType)
+                .FirstOrDefaultAsync(v => v.QrCode == QrCode && (v.Deleted == null || v.Deleted == false));
 
-    return Ok(vehicle);
-}
+            if (vehicle == null)
+            {
+                return NotFound();
+            }
 
-
-[HttpPut("inremont/{vehicleId}")]
-[Authorize(Roles = "Repairman")]
-public async Task<ActionResult<Vehicle>> InRemont(int vehicleId)
-{
-    var vehicle = await _context.Vehicles
-        .FirstOrDefaultAsync(v => v.Id == vehicleId && (v.Deleted == null || v.Deleted == false));
-
-    if (vehicle == null)
-    {
-        return NotFound("Vehicle not found.");
-    }
-    if (vehicle.VehicleStatusId == 4)
-    {
-        return BadRequest("Vehicle is already in repair.");
-    }
-
-   
-
-    vehicle.VehicleStatusId = 4;
-    vehicle.LastActivity = DateTime.UtcNow;
-
-    await _context.SaveChangesAsync();
+            return Ok(vehicle);
+        }
 
 
-    return Ok("Vehicle status updated to 'In Repair'.   ");
-}
-[HttpPut("endremont/{vehicleId}")]
-[Authorize(Roles = "Repairman")]
-public async Task<ActionResult<Vehicle>> EndRemont(int vehicleId)
-{
-    var vehicle = await _context.Vehicles
-        .FirstOrDefaultAsync(v => v.Id == vehicleId && (v.Deleted == null || v.Deleted == false));
+        [HttpPut("inremont/{vehicleId}")]
+        [Authorize(Roles = "Repairman")]
+        public async Task<ActionResult<Vehicle>> InRemont(int vehicleId)
+        {
+            var vehicle = await _context.Vehicles
+                .FirstOrDefaultAsync(v => v.Id == vehicleId && (v.Deleted == null || v.Deleted == false));
 
-    if (vehicle == null)
-    {
-        return NotFound("Vehicle not found.");
-    }
-    if (vehicle.VehicleStatusId != 4)
-    {
-        return BadRequest("Vehicle is not in repair.");
-    }
-
-    vehicle.VehicleStatusId = 1;
-    vehicle.LastActivity = DateTime.UtcNow;
-
-    await _context.SaveChangesAsync();
+            if (vehicle == null)
+            {
+                return NotFound("Vehicle not found.");
+            }
+            if (vehicle.VehicleStatusId == 4)
+            {
+                return BadRequest("Vehicle is already in repair.");
+            }
 
 
 
-    return Ok("Vehicle status updated to 'Available'.   ");
-}
+            vehicle.VehicleStatusId = 4;
+            vehicle.LastActivity = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+
+            return Ok("Vehicle status updated to 'In Repair'.   ");
+        }
+        [HttpPut("endremont/{vehicleId}")]
+        [Authorize(Roles = "Repairman")]
+        public async Task<ActionResult<Vehicle>> EndRemont(int vehicleId)
+        {
+            var vehicle = await _context.Vehicles
+                .FirstOrDefaultAsync(v => v.Id == vehicleId && (v.Deleted == null || v.Deleted == false));
+
+            if (vehicle == null)
+            {
+                return NotFound("Vehicle not found.");
+            }
+            if (vehicle.VehicleStatusId != 4)
+            {
+                return BadRequest("Vehicle is not in repair.");
+            }
+
+            vehicle.VehicleStatusId = 1;
+            vehicle.LastActivity = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
 
 
 
-     [HttpPost("telemetry")]
-public async Task<IActionResult> UpdateTelemetry([FromBody] TelemetryDto dto)
-{
-    var vehicle = await _context.Vehicles
-        .FirstOrDefaultAsync(v => v.QrCode == dto.QrCode && (v.Deleted == null || v.Deleted == false));
-    
-    if (vehicle == null) return NotFound("Vehicle not found");
+            return Ok("Vehicle status updated to 'Available'.   ");
+        }
 
-    vehicle.BatteryLevel = (sbyte)dto.Battery;
-    vehicle.PositionX = (decimal)dto.X;
-    vehicle.PositionY = (decimal)dto.Y;
-    vehicle.LastActivity = DateTime.UtcNow;
 
-    var activeRental = await _context.Rentals
-        .Where(r => r.VehicleId == vehicle.Id && r.EndTime == null)
-        .OrderByDescending(r => r.StartTime)
-        .FirstOrDefaultAsync();
 
-    _context.RouteHistories.Add(new RouteHistory
-    {
-        VehicleId = vehicle.Id,
-        PositionX = (decimal)dto.X,
-        PositionY = (decimal)dto.Y,
-        BatteryLevel = (sbyte)dto.Battery,
-        Speed = (decimal)dto.Speed,
-        RentalId = activeRental?.Id, 
-        RecordedAt = DateTime.UtcNow
-    });
+        [HttpPost("telemetry")]
+        public async Task<IActionResult> UpdateTelemetry([FromBody] TelemetryDto dto)
+        {
+            var vehicle = await _context.Vehicles
+                .FirstOrDefaultAsync(v => v.QrCode == dto.QrCode && (v.Deleted == null || v.Deleted == false));
 
-    await _context.SaveChangesAsync();
-    return Ok(new { message = "Telemetry updated successfully" });
-}
+            if (vehicle == null) return NotFound("Vehicle not found");
+
+            vehicle.BatteryLevel = (sbyte)dto.Battery;
+            vehicle.PositionX = (decimal)dto.X;
+            vehicle.PositionY = (decimal)dto.Y;
+            vehicle.LastActivity = DateTime.UtcNow;
+
+            var activeRental = await _context.Rentals
+                .Where(r => r.VehicleId == vehicle.Id && r.EndTime == null)
+                .OrderByDescending(r => r.StartTime)
+                .FirstOrDefaultAsync();
+
+            _context.RouteHistories.Add(new RouteHistory
+            {
+                VehicleId = vehicle.Id,
+                PositionX = (decimal)dto.X,
+                PositionY = (decimal)dto.Y,
+                BatteryLevel = (sbyte)dto.Battery,
+                Speed = (decimal)dto.Speed,
+                RentalId = activeRental?.Id,
+                RecordedAt = DateTime.UtcNow
+            });
+
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Telemetry updated successfully" });
+        }
 
 
 
