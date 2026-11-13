@@ -61,7 +61,6 @@ namespace TransportApi.Controllers
                 return Unauthorized(new { message = "Invalid token user ID." });
             }
 
-            // Перевірка боргу користувача
             var user = await _context.Users.FindAsync(userId);
             if (user == null)
             {
@@ -151,13 +150,11 @@ namespace TransportApi.Controllers
                 return StatusCode(500, new { message = "Status 'Available' is not found in the database." });
             }
 
-            // 1. Отримуємо всі точки маршруту, які самокат записав у Route_History для цієї оренди
             var routePoints = await _context.RouteHistories
                 .Where(rh => rh.RentalId == rental.Id)
                 .OrderBy(rh => rh.RecordedAt)
                 .ToListAsync();
 
-            // 2. Рахуємо загальну дистанцію по сегментах у кілометрах з фільтрацією шуму
             double totalDistanceKm = 0.0;
             for (int i = 0; i < routePoints.Count - 1; i++)
             {
@@ -180,21 +177,15 @@ namespace TransportApi.Controllers
             int distanceStart = rental.DistanceStart; 
             int distanceEnd = distanceStart + distanceMeters;
 
-            // Записуємо дані в оренду
             rental.EndTime = DateTime.UtcNow;
             rental.Distance = distanceMeters;
             rental.DistanceStart = distanceStart;
             rental.DistanceEnd = distanceEnd; 
 
-            
-
             if (rental.Vehicle != null)
             {
                 rental.Vehicle.LastActivity = DateTime.UtcNow;
-                // Змінюємо статус транспортного засобу на Available
                 rental.Vehicle.VehicleStatusId = availableStatus.Id;
-
-                // ОНОВЛЕННЯ КООРДИНАТ ТРАНСПОРТУ:
                 var lastPoint = routePoints.LastOrDefault();
                 if (lastPoint != null)
                 {
@@ -207,12 +198,10 @@ namespace TransportApi.Controllers
 
             _context.Rentals.Update(rental);
 
-            // 4. Розрахунок балів для марафонів та експедицій
             var currentDate = DateOnly.FromDateTime(DateTime.UtcNow);
             var vehicleTypeId = rental.Vehicle?.VehicleTypeId; 
             var currentUserId = rental.UserId;
-
-            int distanceScore = distanceMeters; // Бали дорівнюють метрам
+            int distanceScore = distanceMeters;
 
             if (vehicleTypeId != null)
             {

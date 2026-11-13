@@ -48,10 +48,7 @@ namespace TransportApi.Services
                 }
                 finally
                 {
-                    await client.DisconnectAsync(true);
-                }
-            }
-        }
+                    await client.DisconnectAsync(true);  }}}
 
         public async Task SendReportReplyEmail(string email, string subject, string messageText)
         {
